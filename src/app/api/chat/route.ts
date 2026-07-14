@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { MODEL_TIERS, isModelTier } from "@/lib/models";
+import { verifySolution } from "@/lib/server/pow";
+import { allowRequest } from "@/lib/server/ratelimit";
 
 // Personvernkrav (PLAN.md seksjon 10): denne handleren logger ALDRI IP,
 // brukeragent eller samtaleinnhold. Ingen console.log av request-data,
@@ -48,9 +50,8 @@ function jsonError(status: number, message: string) {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return jsonError(503, "Tjenesten er ikke konfigurert ennå.");
+  if (!allowRequest(request)) {
+    return jsonError(429, "For mange forespørsler. Vent litt og prøv igjen.");
   }
 
   let body: unknown;
@@ -60,10 +61,21 @@ export async function POST(request: Request) {
     return jsonError(400, "Ugyldig forespørsel.");
   }
 
-  const { messages: rawMessages, model: rawModel } = body as {
+  const {
+    messages: rawMessages,
+    model: rawModel,
+    pow_challenge: powChallenge,
+    pow_solution: powSolution,
+  } = body as {
     messages?: unknown;
     model?: unknown;
+    pow_challenge?: unknown;
+    pow_solution?: unknown;
   };
+
+  if (!verifySolution(powChallenge, powSolution)) {
+    return jsonError(403, "Ugyldig eller utløpt beregningsbevis. Prøv igjen.");
+  }
 
   const tier = isModelTier(rawModel) ? rawModel : "haiku";
   const messages = validateMessages(rawMessages);
@@ -74,6 +86,11 @@ export async function POST(request: Request) {
   if (MODEL_TIERS[tier].paid) {
     // Betalt nivå kobles på i kredittsystem-bolken.
     return jsonError(402, "Opus krever kreditt. Løs inn en kode først.");
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return jsonError(503, "Tjenesten er ikke konfigurert ennå.");
   }
 
   const client = new Anthropic({ apiKey });

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DRAFT_KEY } from "@/lib/draft";
 import type { ModelTier } from "@/lib/models";
+import { fetchAndSolvePow } from "@/lib/pow-client";
 import { SITE_NAME } from "@/lib/site";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -52,10 +53,11 @@ export function ChatApp() {
       };
 
       try {
+        const pow = await fetchAndSolvePow();
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: outgoing, model: activeTier }),
+          body: JSON.stringify({ messages: outgoing, model: activeTier, ...pow }),
         });
 
         if (!response.ok || !response.body) {

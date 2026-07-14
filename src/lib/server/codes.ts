@@ -38,5 +38,4 @@ export function hashCode(normalizedCode: string): string {
   return createHash("sha256").update(normalizedCode).digest("hex");
 }
 
-/** Pris per Opus-svar, i øre. */
-export const PRICE_PER_ANSWER_ORE = 200;
+export { PRICE_PER_ANSWER_ORE } from "@/lib/credit";

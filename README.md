@@ -19,6 +19,13 @@ Utsted en testkode for betalt nivå (Opus):
 npm run gen-code -- 49       # skriver ut f.eks. ROBO-XXXX-XXXX-XXXX-XXXX
 ```
 
+Aktiver Privacy Pass (valgfritt, anbefalt): generer nøkkelpar og legg de to
+linjene i `.env.local` / serverens miljø:
+
+```bash
+npm run gen-pp-keys
+```
+
 ## Drift på egen server (robothjelp.no)
 
 Bygget er `standalone`, så produksjonsserveren trenger bare Node 20+:

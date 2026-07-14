@@ -27,3 +27,12 @@ model ClaimedPayment {
 
   @@map("claimed_payments")
 }
+
+// Privacy Pass double-spend-liste (PLAN.md seksjon 5.2): kun hasher av
+// brukte tokens. Tilfeldige verdier uten kobling til kode, kjøp eller person.
+model SpentToken {
+  tokenHash String   @id @map("token_hash")
+  spentAt   DateTime @default(now()) @map("spent_at")
+
+  @@map("spent_tokens")
+}

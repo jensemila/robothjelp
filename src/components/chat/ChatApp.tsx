@@ -6,6 +6,7 @@ import { BALANCE_KEY, CODE_KEY, formatOre } from "@/lib/credit";
 import { DRAFT_KEY } from "@/lib/draft";
 import type { ModelTier } from "@/lib/models";
 import { fetchAndSolvePow } from "@/lib/pow-client";
+import { loadTokens, popToken, tokenCount } from "@/lib/pp-client";
 import { SITE_NAME } from "@/lib/site";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -32,6 +33,7 @@ export function ChatApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
+  const [ppCount, setPpCount] = useState(0);
   const [ready, setReady] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const sentDraft = useRef(false);
@@ -54,12 +56,18 @@ export function ChatApp() {
 
       try {
         const pow = await fetchAndSolvePow();
+        // Betalt nivå: bruk Privacy Pass-token hvis vi har, ellers koden.
         let code: string | null = null;
+        let ppToken: { message: string; signature: string } | null = null;
         if (activeTier === "opus") {
-          try {
-            code = localStorage.getItem(CODE_KEY);
-          } catch {
-            code = null;
+          ppToken = popToken();
+          setPpCount(tokenCount());
+          if (!ppToken) {
+            try {
+              code = localStorage.getItem(CODE_KEY);
+            } catch {
+              code = null;
+            }
           }
         }
         const response = await fetch("/api/chat", {
@@ -68,7 +76,11 @@ export function ChatApp() {
           body: JSON.stringify({
             messages: outgoing,
             model: activeTier,
-            ...(code ? { code } : {}),
+            ...(ppToken
+              ? { pp_message: ppToken.message, pp_signature: ppToken.signature }
+              : code
+                ? { code }
+                : {}),
             ...pow,
           }),
         });
@@ -158,6 +170,7 @@ export function ChatApp() {
     if (storedBalance !== null && !Number.isNaN(Number(storedBalance))) {
       setBalance(Number(storedBalance));
     }
+    setPpCount(loadTokens().length);
     setReady(true);
     /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -244,7 +257,11 @@ export function ChatApp() {
               </button>
             </div>
             <span className="hidden font-mono text-[12px] text-ink-faint sm:inline">
-              {balance === null ? "Ingen kreditt" : `Saldo: ${formatOre(balance)}`}
+              {ppCount > 0
+                ? `${ppCount} anonyme svar igjen`
+                : balance === null
+                  ? "Ingen kreditt"
+                  : `Saldo: ${formatOre(balance)}`}
             </span>
             <Link
               href="/redeem"

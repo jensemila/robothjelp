@@ -38,7 +38,7 @@ export default function OpennessPage() {
         </p>
 
         <Section title="Det vi lagrer på disk (alt sammen)">
-          <p>Databasen inneholder to tabeller. Ingenting annet lagres.</p>
+          <p>Databasen inneholder tre tabeller. Ingenting annet lagres.</p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
               <span className="text-ink">Kredittkoder:</span> hash av koden
@@ -50,6 +50,13 @@ export default function OpennessPage() {
               hash av en tilfeldig betalingsreferanse og tidspunkt. Dette
               hindrer at samme betaling utsteder to koder. Referansen kan
               ikke kobles til noen kode, noe søk eller noen person.
+            </li>
+            <li>
+              <span className="text-ink">Brukte Privacy Pass-tokens:</span>{" "}
+              hash av hvert brukt token og tidspunkt, så samme token ikke kan
+              brukes to ganger. Tokens er blindsignerte tilfeldige verdier,
+              og kan per konstruksjon ikke kobles til koden de ble vekslet
+              fra, til kjøpet eller til andre søk.
             </li>
           </ul>
           <p>

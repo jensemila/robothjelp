@@ -7,10 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "gen-code": "tsx scripts/generate-code.ts"
+    "gen-code": "tsx scripts/generate-code.ts",
+    "gen-pp-keys": "tsx scripts/generate-pp-keys.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
+    "@cloudflare/blindrsa-ts": "^0.4.6",
     "@prisma/client": "^6.19.3",
     "next": "16.2.10",
     "react": "19.2.4",

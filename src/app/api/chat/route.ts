@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/codes";
 import { prisma } from "@/lib/server/db";
 import { verifySolution } from "@/lib/server/pow";
+import { ppConfigured, spendToken } from "@/lib/server/privacypass";
 import { allowRequest } from "@/lib/server/ratelimit";
 
 // Personvernkrav (PLAN.md seksjon 10): denne handleren logger ALDRI IP,
@@ -71,12 +72,16 @@ export async function POST(request: Request) {
     messages: rawMessages,
     model: rawModel,
     code: rawCode,
+    pp_message: ppMessage,
+    pp_signature: ppSignature,
     pow_challenge: powChallenge,
     pow_solution: powSolution,
   } = body as {
     messages?: unknown;
     model?: unknown;
     code?: unknown;
+    pp_message?: unknown;
+    pp_signature?: unknown;
     pow_challenge?: unknown;
     pow_solution?: unknown;
   };
@@ -96,11 +101,32 @@ export async function POST(request: Request) {
     return jsonError(503, "Tjenesten er ikke konfigurert ennå.");
   }
 
-  // Betalt nivå: trekk saldo atomisk FØR svaret genereres. Koden lagres
-  // aldri i klartekst; kun hashen brukes til oppslag.
+  // Betalt nivå. To veier:
+  //  1) Privacy Pass-token: serveren kan verifisere at tokenet er ekte,
+  //     men ikke koble det til kode, kjøp eller andre søk.
+  //  2) Kredittkode (MVP): saldo trekkes atomisk FØR svaret genereres.
+  //     Koden lagres aldri i klartekst; kun hashen brukes til oppslag.
   let remainingOre: number | null = null;
   let paidCodeHash: string | null = null;
-  if (MODEL_TIERS[tier].paid) {
+  if (
+    MODEL_TIERS[tier].paid &&
+    typeof ppMessage === "string" &&
+    typeof ppSignature === "string"
+  ) {
+    if (!ppConfigured()) {
+      return jsonError(503, "Privacy Pass er ikke aktivert på serveren.");
+    }
+    if (
+      ppMessage.length > 1024 ||
+      ppSignature.length > 1024 ||
+      !(await spendToken(ppMessage, ppSignature))
+    ) {
+      return jsonError(
+        402,
+        "Ugyldig eller allerede brukt token. Veksle inn flere fra koden din.",
+      );
+    }
+  } else if (MODEL_TIERS[tier].paid) {
     const normalized =
       typeof rawCode === "string" ? normalizeCode(rawCode) : null;
     if (!normalized) {

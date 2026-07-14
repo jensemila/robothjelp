@@ -1,65 +1,154 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Footer } from "@/components/Footer";
+import { HeroChatInput } from "@/components/HeroChatInput";
+import { Topbar } from "@/components/Topbar";
+
+const TRUST_POINTS = [
+  {
+    label: "Ingen logging",
+    body: "Samtaler lagres aldri på serveren, og IP-adressen din skrives aldri til disk. Historikk finnes kun i din nettleser og slettes med ett klikk.",
+  },
+  {
+    label: "Ingen konto",
+    body: "Ingen e-post, ingen telefon, ingen innlogging. Det finnes ikke noe kunderegister som kan kobles til det du spør om.",
+  },
+  {
+    label: "Åpen kildekode",
+    body: "Du trenger ikke tro på oss. Koden er åpen, så du kan lese nøyaktig hva serveren gjør med hvert eneste kall.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      <Topbar />
+      <main>
+        <section className="mx-auto max-w-6xl px-5 pb-20 pt-20 sm:pt-24">
+          <h1 className="mx-auto max-w-3xl text-center text-4xl font-semibold tracking-tighter sm:text-5xl">
+            Spør om det du ikke vil ha i loggen
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-5 max-w-xl text-center text-[15px] leading-relaxed text-ink-dim">
+            Ingen konto, ingen navn, ingen lagring hos oss. Historikken finnes
+            bare i din egen nettleser.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <div className="mt-10">
+            <HeroChatInput />
+          </div>
+        </section>
+
+        <section
+          id="slik-virker-det"
+          className="border-t border-line scroll-mt-16"
+        >
+          <div className="mx-auto max-w-6xl px-5 py-16">
+            <p className="font-mono text-[12px] uppercase tracking-widest text-ink-faint">
+              Slik virker det
+            </p>
+            <div className="mt-8 grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-3">
+              {TRUST_POINTS.map((point) => (
+                <div key={point.label} className="bg-surface p-6">
+                  <h2 className="text-[15px] font-medium">{point.label}</h2>
+                  <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
+                    {point.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 max-w-2xl text-[14px] leading-relaxed text-ink-faint">
+              Spørsmålene besvares av Claude. Alle kall går fra vår felles
+              bedriftskonto, så modell-leverandøren ser at noen spurte om noe,
+              men aldri hvem. Les detaljene på{" "}
+              <Link
+                href="/openness"
+                className="text-ink-dim underline underline-offset-4 hover:text-ink"
+              >
+                åpenhetssiden
+              </Link>
+              .
+            </p>
+          </div>
+        </section>
+
+        <section id="priser" className="border-t border-line scroll-mt-16">
+          <div className="mx-auto max-w-6xl px-5 py-16">
+            <p className="font-mono text-[12px] uppercase tracking-widest text-ink-faint">
+              Priser
+            </p>
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <div className="rounded-card border border-line bg-surface p-7">
+                <h2 className="text-[15px] font-medium">Gratis</h2>
+                <p className="mt-1 text-3xl font-semibold tracking-tight">
+                  0 kr
+                </p>
+                <ul className="mt-5 space-y-2 text-[14px] leading-relaxed text-ink-dim">
+                  <li>Haiku-modellen, rask og kompetent</li>
+                  <li>Ubegrenset bruk innen rimelighetens grenser</li>
+                  <li>Nøyaktig samme anonymitet som betalt nivå</li>
+                </ul>
+                <Link
+                  href="/chat"
+                  className="mt-7 inline-block rounded-(--radius-ctl) border border-line-strong px-4 py-2.5 text-[14px] font-medium transition active:scale-[0.98] hover:border-accent hover:text-accent-strong"
+                >
+                  Start gratis
+                </Link>
+              </div>
+              <div className="relative rounded-card border border-accent/40 bg-surface p-7">
+                <span className="absolute right-5 top-5 rounded-full border border-accent/40 px-2.5 py-0.5 font-mono text-[11px] text-accent-strong">
+                  Best kvalitet
+                </span>
+                <h2 className="text-[15px] font-medium">Kreditt</h2>
+                <p className="mt-1 text-3xl font-semibold tracking-tight">
+                  fra 49 kr
+                </p>
+                <ul className="mt-5 space-y-2 text-[14px] leading-relaxed text-ink-dim">
+                  <li>Opus-modellen, den beste på markedet</li>
+                  <li>Kreditt trekkes per svar</li>
+                  <li>Koden er anonym og ikke knyttet til deg</li>
+                </ul>
+                <Link
+                  href="/buy"
+                  className="mt-7 inline-block rounded-(--radius-ctl) bg-accent px-4 py-2.5 text-[14px] font-medium text-accent-ink transition active:scale-[0.98] hover:bg-accent-strong"
+                >
+                  Kjøp kreditt
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-line">
+          <div className="mx-auto max-w-6xl px-5 py-16">
+            <p className="font-mono text-[12px] uppercase tracking-widest text-ink-faint">
+              Slik kjøper du kreditt
+            </p>
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <div className="rounded-card border border-line bg-surface p-7">
+                <h2 className="text-[15px] font-medium">Vipps</h2>
+                <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
+                  Betal med Vipps og få en engangskode på skjermen. Vipps ser
+                  at du kjøpte en kode av oss, men koblingen mellom betalingen
+                  og koden slettes i det koden utstedes. Det finnes ingen vei
+                  fra betalingen til det du spør om.
+                </p>
+              </div>
+              <div className="rounded-card border border-line bg-surface p-7">
+                <h2 className="text-[15px] font-medium">Lightning</h2>
+                <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
+                  Betal med Bitcoin over Lightning hvis du ikke vil at noen
+                  skal vite at du er kunde hos oss i det hele tatt. Samme
+                  kode, samme saldo, ingen kundeforhold noe sted.
+                </p>
+              </div>
+            </div>
+            <p className="mt-6 max-w-2xl text-[14px] leading-relaxed text-ink-faint">
+              Koden er et ihendehaverbevis, som kontanter. Mister du den, kan
+              vi ikke finne den igjen for deg, for vi vet ikke hvem den
+              tilhørte. Derfor selger vi små valører.
+            </p>
+          </div>
+        </section>
       </main>
-    </div>
+      <Footer />
+    </>
   );
 }

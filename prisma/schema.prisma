@@ -1,0 +1,20 @@
+// Kredittlager (PLAN.md seksjon 4.3): tabellen inneholder KUN
+// { code_hash, saldo, opprettet_at }. Ingen brukerdata, ingen IP,
+// ingen kobling til betaling.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model CreditCode {
+  codeHash    String   @id @map("code_hash")
+  saldoOre    Int      @map("saldo_ore")
+  opprettetAt DateTime @default(now()) @map("opprettet_at")
+
+  @@map("credit_codes")
+}

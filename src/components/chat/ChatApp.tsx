@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BALANCE_KEY, CODE_KEY, formatOre } from "@/lib/credit";
 import { DRAFT_KEY } from "@/lib/draft";
 import type { ModelTier } from "@/lib/models";
 import { fetchAndSolvePow } from "@/lib/pow-client";
@@ -12,7 +13,6 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 // All historikk ligger KUN i nettleseren (localStorage), aldri på serveren.
 const HISTORY_KEY = "sporfri:history";
 const TIER_KEY = "sporfri:model";
-const BALANCE_KEY = "sporfri:saldo";
 
 function loadHistory(): ChatMessage[] {
   try {
@@ -54,10 +54,23 @@ export function ChatApp() {
 
       try {
         const pow = await fetchAndSolvePow();
+        let code: string | null = null;
+        if (activeTier === "opus") {
+          try {
+            code = localStorage.getItem(CODE_KEY);
+          } catch {
+            code = null;
+          }
+        }
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: outgoing, model: activeTier, ...pow }),
+          body: JSON.stringify({
+            messages: outgoing,
+            model: activeTier,
+            ...(code ? { code } : {}),
+            ...pow,
+          }),
         });
 
         if (!response.ok || !response.body) {
@@ -78,7 +91,12 @@ export function ChatApp() {
           buffer = lines.pop() ?? "";
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
-            let event: { type: string; text?: string; message?: string };
+            let event: {
+              type: string;
+              text?: string;
+              message?: string;
+              saldo_ore?: number;
+            };
             try {
               event = JSON.parse(line.slice(6));
             } catch {
@@ -87,6 +105,15 @@ export function ChatApp() {
             if (event.type === "text" && event.text) {
               assistantText += event.text;
               commit();
+            } else if (event.type === "done") {
+              if (typeof event.saldo_ore === "number") {
+                setBalance(event.saldo_ore);
+                try {
+                  localStorage.setItem(BALANCE_KEY, String(event.saldo_ore));
+                } catch {
+                  // Ikke kritisk.
+                }
+              }
             } else if (event.type === "error") {
               setError(event.message ?? "Noe gikk galt. Prøv igjen.");
             }
@@ -217,7 +244,7 @@ export function ChatApp() {
               </button>
             </div>
             <span className="hidden font-mono text-[12px] text-ink-faint sm:inline">
-              {balance === null ? "Ingen kreditt" : `Saldo: ${balance} kr`}
+              {balance === null ? "Ingen kreditt" : `Saldo: ${formatOre(balance)}`}
             </span>
             <Link
               href="/redeem"

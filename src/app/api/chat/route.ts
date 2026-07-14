@@ -1,5 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { MODEL_TIERS, isModelTier } from "@/lib/models";
+import {
+  PRICE_PER_ANSWER_ORE,
+  hashCode,
+  normalizeCode,
+} from "@/lib/server/codes";
+import { prisma } from "@/lib/server/db";
 import { verifySolution } from "@/lib/server/pow";
 import { allowRequest } from "@/lib/server/ratelimit";
 
@@ -64,11 +70,13 @@ export async function POST(request: Request) {
   const {
     messages: rawMessages,
     model: rawModel,
+    code: rawCode,
     pow_challenge: powChallenge,
     pow_solution: powSolution,
   } = body as {
     messages?: unknown;
     model?: unknown;
+    code?: unknown;
     pow_challenge?: unknown;
     pow_solution?: unknown;
   };
@@ -83,14 +91,38 @@ export async function POST(request: Request) {
     return jsonError(400, "Ugyldig forespørsel.");
   }
 
-  if (MODEL_TIERS[tier].paid) {
-    // Betalt nivå kobles på i kredittsystem-bolken.
-    return jsonError(402, "Opus krever kreditt. Løs inn en kode først.");
-  }
-
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return jsonError(503, "Tjenesten er ikke konfigurert ennå.");
+  }
+
+  // Betalt nivå: trekk saldo atomisk FØR svaret genereres. Koden lagres
+  // aldri i klartekst; kun hashen brukes til oppslag.
+  let remainingOre: number | null = null;
+  let paidCodeHash: string | null = null;
+  if (MODEL_TIERS[tier].paid) {
+    const normalized =
+      typeof rawCode === "string" ? normalizeCode(rawCode) : null;
+    if (!normalized) {
+      return jsonError(402, "Opus krever kreditt. Løs inn en kode først.");
+    }
+    const codeHash = hashCode(normalized);
+    const deducted = await prisma.creditCode.updateMany({
+      where: { codeHash, saldoOre: { gte: PRICE_PER_ANSWER_ORE } },
+      data: { saldoOre: { decrement: PRICE_PER_ANSWER_ORE } },
+    });
+    if (deducted.count === 0) {
+      return jsonError(
+        402,
+        "Ikke nok saldo på koden. Kjøp en ny kode for å fortsette.",
+      );
+    }
+    paidCodeHash = codeHash;
+    const entry = await prisma.creditCode.findUnique({
+      where: { codeHash },
+      select: { saldoOre: true },
+    });
+    remainingOre = entry?.saldoOre ?? null;
   }
 
   const client = new Anthropic({ apiKey });
@@ -117,9 +149,24 @@ export async function POST(request: Request) {
           }
         }
         const final = await anthropicStream.finalMessage();
-        send({ type: "done", stopReason: final.stop_reason });
+        send({
+          type: "done",
+          stopReason: final.stop_reason,
+          ...(remainingOre !== null ? { saldo_ore: remainingOre } : {}),
+        });
       } catch {
         // Ingen detaljer logges eller videresendes; klienten får en generisk feil.
+        // Feilet betalt svar refunderes.
+        if (paidCodeHash) {
+          try {
+            await prisma.creditCode.update({
+              where: { codeHash: paidCodeHash },
+              data: { saldoOre: { increment: PRICE_PER_ANSWER_ORE } },
+            });
+          } catch {
+            // Refusjon er beste forsøk.
+          }
+        }
         send({ type: "error", message: "Noe gikk galt. Prøv igjen." });
       } finally {
         controller.close();

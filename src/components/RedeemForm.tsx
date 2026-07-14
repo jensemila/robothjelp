@@ -82,13 +82,13 @@ export function RedeemForm() {
         Kredittkode
       </label>
       <p className="mt-1 text-[13px] text-ink-faint">
-        Formatet er SPFR-XXXX-XXXX-XXXX-XXXX
+        Formatet er ROBO-XXXX-XXXX-XXXX-XXXX
       </p>
       <input
         id="code"
         value={code}
         onChange={(e) => setCode(e.target.value)}
-        placeholder="SPFR-"
+        placeholder="ROBO-"
         autoComplete="off"
         spellCheck={false}
         className="mt-3 w-full rounded-(--radius-ctl) border border-line-strong bg-bg px-3 py-2.5 font-mono text-[15px] tracking-wide placeholder:text-ink-faint focus:border-accent focus:outline-none"

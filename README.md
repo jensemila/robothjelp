@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Robothjelp — anonyme KI-søk
 
-## Getting Started
+Anonymiserende mellomledd foran Claude sin API. Ingen konto, ingen lagring av
+samtaler, ingen IP-logging. Betaling er frikoblet fra bruk via anonyme
+kredittkoder. Se `PLAN.md` for hele byggeplanen og personvernkravene.
 
-First, run the development server:
+## Utvikling
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # fyll inn ANTHROPIC_API_KEY m.m.
+npm install
+npx prisma db push           # oppretter SQLite-basen (prisma/dev.db)
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Utsted en testkode for betalt nivå (Opus):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run gen-code -- 49       # skriver ut f.eks. ROBO-XXXX-XXXX-XXXX-XXXX
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Drift på egen server (robothjelp.no)
 
-## Learn More
+Bygget er `standalone`, så produksjonsserveren trenger bare Node 20+:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+# Kopier til serveren:
+#   .next/standalone/   (inkl. server.js)
+#   .next/static/    -> .next/standalone/.next/static
+#   public/          -> .next/standalone/public
+#   prisma/          -> databasefil + schema
+# På serveren:
+DATABASE_URL="file:/var/lib/robothjelp/prod.db" \
+ANTHROPIC_API_KEY=... \
+node server.js               # lytter på PORT (default 3000)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Sett opp en reverse proxy (Caddy/nginx) foran med TLS for robothjelp.no.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+VIKTIG personvernkrav til driften (PLAN.md seksjon 10):
 
-## Deploy on Vercel
+- Ikke logg forespørsler i reverse proxyen (skru av access-log, eller
+  fjern IP fra loggformatet). Applikasjonen logger selv ingenting.
+- `.env`-filer skal aldri committes; hemmeligheter kun i miljøvariabler.
+- Databasen inneholder kun kredittkode-hasher og saldo, og skal ligge
+  utenfor webroten.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Miljøvariabler
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Se `.env.example`. Uten `ANTHROPIC_API_KEY` svarer chatten 503; uten
+Vipps-/BTCPay-nøkler svarer kjøpsflyten 503. Resten av siden fungerer.

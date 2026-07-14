@@ -11,8 +11,8 @@ import { SITE_NAME } from "@/lib/site";
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 // All historikk ligger KUN i nettleseren (localStorage), aldri på serveren.
-const HISTORY_KEY = "sporfri:history";
-const TIER_KEY = "sporfri:model";
+const HISTORY_KEY = "robothjelp:history";
+const TIER_KEY = "robothjelp:model";
 
 function loadHistory(): ChatMessage[] {
   try {

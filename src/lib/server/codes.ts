@@ -5,7 +5,7 @@ import { createHash, randomInt } from "node:crypto";
 // 16 tegn à 5 bits = 80 bits entropi; brute force er urealistisk.
 
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const PREFIX = "SPFR";
+const PREFIX = "ROBO";
 const GROUPS = 4;
 const GROUP_LENGTH = 4;
 

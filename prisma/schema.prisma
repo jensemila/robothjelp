@@ -18,3 +18,12 @@ model CreditCode {
 
   @@map("credit_codes")
 }
+
+// Vern mot dobbel utstedelse: kun HASH av betalingsreferansen og tidspunkt.
+// Ingen kobling til kode, beløp eller person. Kan slettes etter kort tid.
+model ClaimedPayment {
+  referenceHash String   @id @map("reference_hash")
+  claimedAt     DateTime @default(now()) @map("claimed_at")
+
+  @@map("claimed_payments")
+}

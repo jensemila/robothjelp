@@ -1,0 +1,36 @@
+# systemd-tjeneste for Robothjelp (Next.js standalone).
+# Installeres som /etc/systemd/system/robothjelp.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now robothjelp
+
+[Unit]
+Description=Robothjelp (anonyme KI-søk)
+After=network.target
+
+[Service]
+# Appfilene ligger i /srv/robothjelp (se deploy.sh)
+WorkingDirectory=/srv/robothjelp
+ExecStart=/usr/bin/env node server.js
+Restart=on-failure
+
+# Hemmeligheter KUN her, aldri i repoet:
+#   /etc/robothjelp/env må inneholde:
+#     ANTHROPIC_API_KEY=...
+#     DATABASE_URL=file:/var/lib/robothjelp/prod.db
+#     PP_PRIVATE_KEY=...  PP_PUBLIC_KEY=...
+#     (Vipps-/BTCPay-nøkler når de er klare)
+EnvironmentFile=/etc/robothjelp/env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+
+# Kjør som egen bruker uten skriverettigheter utenfor databasen.
+User=robothjelp
+Group=robothjelp
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/robothjelp
+
+[Install]
+WantedBy=multi-user.target

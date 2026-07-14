@@ -1,0 +1,21 @@
+# Caddy-oppsett for robothjelp.no. Caddy henter TLS-sertifikat automatisk.
+# VIKTIG (PLAN.md seksjon 10): ingen access-logg. Caddy logger ikke
+# forespørsler per side som standard; "output discard" gjør det eksplisitt.
+
+robothjelp.no {
+	reverse_proxy 127.0.0.1:3000
+
+	log {
+		output discard
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+}
+
+www.robothjelp.no {
+	redir https://robothjelp.no{uri} permanent
+}

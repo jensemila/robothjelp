@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Topbar } from "@/components/Topbar";
-import { CONTACT_EMAIL, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  CONTACT_EMAIL,
+  LEGAL_ADDRESS,
+  LEGAL_NAME,
+  ORG_NR,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Personvern",
@@ -34,12 +41,12 @@ export default function PrivacyPage() {
           Personvernerklæring
         </h1>
         <p className="mt-3 font-mono text-[12px] text-ink-faint">
-          Sist oppdatert 14. juli 2026
+          Sist oppdatert 15. juli 2026
         </p>
 
         <Section title="1. Behandlingsansvarlig">
           <p>
-            [SELSKAPSNAVN], organisasjonsnummer [ORG.NR], er
+            {LEGAL_NAME}, org.nr {ORG_NR}, med adresse {LEGAL_ADDRESS}, er
             behandlingsansvarlig for {SITE_NAME} på {SITE_URL}. Henvendelser
             om personvern rettes til {CONTACT_EMAIL}.
           </p>

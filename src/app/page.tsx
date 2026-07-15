@@ -25,7 +25,7 @@ export default function Home() {
       <main>
         <section className="mx-auto max-w-6xl px-5 pb-20 pt-20 sm:pt-24">
           <h1 className="mx-auto max-w-3xl text-center text-4xl font-semibold tracking-tighter sm:text-5xl">
-            Spør om det du ikke vil ha i loggen
+            Bruk KI uten å miste anonymiteten
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-center text-[15px] leading-relaxed text-ink-dim">
             Ingen konto, ingen navn, ingen lagring hos oss. Historikken finnes

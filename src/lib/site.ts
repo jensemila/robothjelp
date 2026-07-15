@@ -10,5 +10,10 @@ export const SITE_DESCRIPTION =
 
 export const GITHUB_URL = "https://github.com/"; // TODO: pek på faktisk repo ved publisering
 
+// Juridisk selger bak tjenesten (Klarlinje Asp, enkeltpersonforetak).
+export const LEGAL_NAME = "Klarlinje Asp";
+export const ORG_NR = "936 712 940";
+export const LEGAL_ADDRESS = "Møllergata 6, 0179 Oslo";
+
 // Kontaktpunkt for reklamasjon og henvendelser (fyll inn før lansering).
 export const CONTACT_EMAIL = "[E-POSTADRESSE]";

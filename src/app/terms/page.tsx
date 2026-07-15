@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Topbar } from "@/components/Topbar";
-import { CONTACT_EMAIL, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  CONTACT_EMAIL,
+  LEGAL_ADDRESS,
+  LEGAL_NAME,
+  ORG_NR,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Salgsvilkår",
@@ -34,14 +41,15 @@ export default function TermsPage() {
           Salgsvilkår
         </h1>
         <p className="mt-3 font-mono text-[12px] text-ink-faint">
-          Sist oppdatert 14. juli 2026
+          Sist oppdatert 15. juli 2026
         </p>
 
         <Section title="1. Hvem vi er">
           <p>
             Disse vilkårene gjelder kjøp av kredittkoder fra {SITE_NAME} på{" "}
-            {SITE_URL}. Selger er [SELSKAPSNAVN], organisasjonsnummer
-            [ORG.NR], [ADRESSE]. Henvendelser rettes til {CONTACT_EMAIL}.
+            {SITE_URL}. Selger er {LEGAL_NAME}, org.nr {ORG_NR}, et norsk
+            enkeltpersonforetak med adresse {LEGAL_ADDRESS}. Henvendelser
+            rettes til {CONTACT_EMAIL}.
           </p>
           <p>
             Vilkårene gjelder sammen med angrerettloven, forbrukerkjøpsloven

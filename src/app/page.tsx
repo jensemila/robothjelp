@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { FaqAccordion } from "@/components/FaqAccordion";
 import { HeroChatInput } from "@/components/HeroChatInput";
 import { Topbar } from "@/components/Topbar";
+import { QA } from "@/lib/faq";
+import { GITHUB_URL } from "@/lib/site";
 
 const TRUST_POINTS = [
   {
     label: "Samtalene lagres aldri",
-    body: "Ingenting du spør om skrives til disk hos oss, og IP-adressen din logges aldri. Historikken finnes kun i din nettleser, og slettes med ett klikk.",
+    body: "Vi skriver aldri ned det du spør om, og IP-adressen din logges aldri. Historikken finnes kun i din nettleser, og slettes med ett klikk.",
   },
   {
     label: "Ingen konto",
@@ -70,9 +73,9 @@ export default function Home() {
 
               <div className="mt-6 max-w-2xl space-y-3 text-[15px] leading-relaxed text-ink-dim">
                 <p>
-                  Serveren vår er et rør, ikke et arkiv. Spørsmålet ditt
-                  streames gjennom i sanntid og svaret tilbake, uten å være
-                  innom disk underveis.
+                  Serveren vår er et rør, ikke et arkiv. Spørsmålet ditt er
+                  innom oss i de sekundene det tar å svare, og forsvinner i det
+                  svaret er levert. Vi skriver det aldri ned noe sted.
                 </p>
                 <p>
                   Vi sender det videre fra én felles bedriftskonto, så
@@ -82,8 +85,17 @@ export default function Home() {
                   nettleser, ikke hos oss.
                 </p>
                 <p className="text-ink">
-                  Du trenger ikke tro på oss. Koden er åpen, så du kan lese
-                  nøyaktig hva serveren gjør med hvert eneste kall.
+                  Du trenger ikke tro på oss.{" "}
+                  <a
+                    href={GITHUB_URL}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    className="text-accent-strong underline underline-offset-4 hover:text-accent"
+                  >
+                    Koden er åpen
+                  </a>
+                  , så du kan lese nøyaktig hva serveren gjør med hvert eneste
+                  kall.
                 </p>
               </div>
             </div>
@@ -196,6 +208,23 @@ export default function Home() {
               vi ikke finne den igjen for deg, for vi vet ikke hvem den
               tilhørte. Derfor selger vi små valører.
             </p>
+          </div>
+        </section>
+
+        <section id="sporsmal" className="border-t border-line scroll-mt-16">
+          <div className="mx-auto max-w-3xl px-5 py-16">
+            <p className="font-mono text-[12px] uppercase tracking-widest text-ink-faint">
+              Spørsmål og svar
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight">
+              De vanligste innvendingene
+            </h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-dim">
+              Besvart så ærlig vi klarer. Trykk for å lese svaret.
+            </p>
+            <div className="mt-8">
+              <FaqAccordion items={QA} />
+            </div>
           </div>
         </section>
       </main>

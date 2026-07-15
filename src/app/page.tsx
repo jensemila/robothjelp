@@ -5,8 +5,8 @@ import { Topbar } from "@/components/Topbar";
 
 const TRUST_POINTS = [
   {
-    label: "Ingen logging",
-    body: "Samtaler lagres aldri på serveren, og IP-adressen din skrives aldri til disk. Historikk finnes kun i din nettleser og slettes med ett klikk.",
+    label: "Samtalene lagres aldri",
+    body: "Ingenting du spør om skrives til disk hos oss, og IP-adressen din logges aldri. Historikken finnes kun i din nettleser, og slettes med ett klikk.",
   },
   {
     label: "Ingen konto",
@@ -25,11 +25,11 @@ export default function Home() {
       <main>
         <section className="mx-auto max-w-6xl px-5 pb-20 pt-20 sm:pt-24">
           <h1 className="mx-auto max-w-3xl text-center text-4xl font-semibold tracking-tighter sm:text-5xl">
-            Bruk KI uten å miste anonymiteten
+            Bruk KI helt anonymt
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-center text-[15px] leading-relaxed text-ink-dim">
-            Ingen konto, ingen navn, ingen lagring hos oss. Historikken finnes
-            bare i din egen nettleser.
+            Vanlige KI-tjenester knytter hvert spørsmål til navnet ditt. Vi har
+            ingen konto å knytte det til.
           </p>
           <div className="mt-10">
             <HeroChatInput />

@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     if (state === "CREATED") {
       return Response.json({ pending: true });
     }
-    if (state !== "AUTHORIZED" || !isValidDenomination(amountOre)) {
+    if (state !== "AUTHORIZED" || !isValidDenomination(amountOre, "vipps")) {
       return Response.json(
         { error: "Betalingen er ikke gjennomført." },
         { status: 402 },

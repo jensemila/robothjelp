@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   if (
     typeof reference !== "string" ||
     !/^[0-9a-f]{32}$/.test(reference) ||
-    !isValidDenomination(amountOre)
+    !isValidDenomination(amountOre, "lightning")
   ) {
     return Response.json({ error: "Ugyldig forespørsel." }, { status: 400 });
   }

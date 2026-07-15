@@ -1,4 +1,4 @@
-import { isValidDenomination } from "@/lib/pricing";
+import { isPaymentMethod, isValidDenomination } from "@/lib/pricing";
 import { createBtcpayInvoice, btcpayConfigured } from "@/lib/server/btcpay";
 import { newReference } from "@/lib/server/claims";
 import { allowRequest } from "@/lib/server/ratelimit";
@@ -29,14 +29,15 @@ export async function POST(request: Request) {
     method?: unknown;
   };
 
-  if (!isValidDenomination(amountOre)) {
-    return Response.json({ error: "Ugyldig valør." }, { status: 400 });
-  }
-  if (method !== "vipps" && method !== "lightning") {
+  // Metoden må valideres FØR valøren, siden gyldige valører avhenger av den.
+  if (!isPaymentMethod(method)) {
     return Response.json(
       { error: "Ugyldig betalingsmetode." },
       { status: 400 },
     );
+  }
+  if (!isValidDenomination(amountOre, method)) {
+    return Response.json({ error: "Ugyldig valør." }, { status: 400 });
   }
 
   const reference = newReference();

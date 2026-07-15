@@ -97,4 +97,4 @@ Personvernkrav til driften:
 
 ## Lisens
 
-TODO: velg lisens før publisering.
+MIT. Se [`LICENSE`](LICENSE).

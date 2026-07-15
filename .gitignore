@@ -46,3 +46,7 @@ next-env.d.ts
 # local database
 prisma/*.db
 prisma/*.db-journal
+
+# Tredjeparts design-skill (installeres via skills-lock.json, ikke vendret inn)
+.agents/
+.claude/skills/

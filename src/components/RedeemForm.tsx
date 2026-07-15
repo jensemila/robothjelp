@@ -19,6 +19,7 @@ export function RedeemForm() {
   const [saldoOre, setSaldoOre] = useState<number | null>(null);
   const [ppAvailable, setPpAvailable] = useState(false);
   const [ppBusy, setPpBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [ppError, setPpError] = useState<string | null>(null);
   const [ppTotal, setPpTotal] = useState<number | null>(null);
 
@@ -134,35 +135,90 @@ export function RedeemForm() {
           </p>
         )}
 
-        {ppAvailable && !exchanged && (
+        {ppAvailable && !exchanged && saldoOre >= PRICE_PER_ANSWER_ORE && (
           <div className="mt-6 rounded-(--radius-ctl) border border-line bg-bg p-4">
             <p className="text-[14px] font-medium">
               Privacy Pass: fjern siste kobling
             </p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-dim">
-              Veksle saldoen inn i anonyme engangstokens. Da kan ikke engang
-              serveren se hvilke betalte søk som hører sammen. Tokens lagres
-              kun i denne nettleseren, og kan ikke flyttes til en annen enhet.
+              Du kan veksle saldoen inn i anonyme engangstokens. Da kan ikke
+              engang serveren se hvilke betalte søk som hører sammen. Dette er
+              helt frivillig: koden fungerer utmerket som den er.
             </p>
+
             {ppError && (
               <p className="mt-2 text-[13px] text-danger" role="alert">
                 {ppError}
               </p>
             )}
-            {saldoOre >= PRICE_PER_ANSWER_ORE && (
+
+            {!confirming ? (
               <button
                 type="button"
-                onClick={() => void exchangeAll()}
-                disabled={ppBusy}
-                className="mt-3 rounded-(--radius-ctl) border border-line-strong px-4 py-2 text-[13px] transition active:scale-[0.98] hover:border-accent hover:text-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  setConfirming(true);
+                  setPpError(null);
+                }}
+                className="mt-3 rounded-(--radius-ctl) border border-line-strong px-4 py-2 text-[13px] transition active:scale-[0.98] hover:border-accent hover:text-accent-strong"
               >
-                {ppBusy
-                  ? "Veksler…"
-                  : `Veksle inn ${Math.min(
-                      Math.floor(saldoOre / PRICE_PER_ANSWER_ORE),
-                      MAX_TOKENS_PER_EXCHANGE,
-                    )} svar`}
+                Les mer om innveksling
               </button>
+            ) : (
+              <div className="mt-4 border-t border-line pt-4">
+                <p className="text-[13px] font-medium text-ink">
+                  Les dette før du velger. Innvekslingen kan ikke angres.
+                </p>
+                <dl className="mt-3 space-y-3 text-[13px] leading-relaxed">
+                  <div>
+                    <dt className="text-accent-strong">Dette vinner du</dt>
+                    <dd className="text-ink-dim">
+                      Serveren kan i dag se at de betalte søkene dine hører til
+                      samme kode. Etter innveksling kan den ikke det, fordi den
+                      signerer tokens uten å se dem.
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-danger">Dette gir du fra deg</dt>
+                    <dd className="text-ink-dim">
+                      Saldoen slutter å være flyttbar. Koden kan du bruke fra
+                      hvilken som helst enhet. Tokens finnes kun i denne
+                      nettleseren. Sletter du nettleserdataene for siden, bytter
+                      nettleser, eller bytter enhet, er{" "}
+                      {formatOre(
+                        Math.min(
+                          Math.floor(saldoOre / PRICE_PER_ANSWER_ORE),
+                          MAX_TOKENS_PER_EXCHANGE,
+                        ) * PRICE_PER_ANSWER_ORE,
+                      )}{" "}
+                      borte for godt. Vi kan ikke gjenopprette dem, for vi vet
+                      ikke at de var dine.
+                    </dd>
+                  </div>
+                </dl>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void exchangeAll()}
+                    disabled={ppBusy}
+                    className="rounded-(--radius-ctl) bg-accent px-4 py-2 text-[13px] font-medium text-accent-ink transition active:scale-[0.98] hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {ppBusy
+                      ? "Veksler…"
+                      : `Jeg forstår, veksle inn ${Math.min(
+                          Math.floor(saldoOre / PRICE_PER_ANSWER_ORE),
+                          MAX_TOKENS_PER_EXCHANGE,
+                        )} svar`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirming(false)}
+                    disabled={ppBusy}
+                    className="rounded-(--radius-ctl) border border-line-strong px-4 py-2 text-[13px] text-ink-dim transition hover:text-ink disabled:opacity-50"
+                  >
+                    Behold koden som den er
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}

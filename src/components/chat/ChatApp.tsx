@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BALANCE_KEY, CODE_KEY, formatOre } from "@/lib/credit";
+import { BALANCE_KEY, CODE_KEY, TIER_KEY, formatOre } from "@/lib/credit";
 import { DRAFT_KEY } from "@/lib/draft";
 import type { ModelTier } from "@/lib/models";
 import { fetchAndSolvePow } from "@/lib/pow-client";
@@ -13,7 +13,6 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 
 // All historikk ligger KUN i nettleseren (localStorage), aldri på serveren.
 const HISTORY_KEY = "robothjelp:history";
-const TIER_KEY = "robothjelp:model";
 
 function loadHistory(): ChatMessage[] {
   try {
@@ -34,6 +33,9 @@ export function ChatApp() {
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [ppCount, setPpCount] = useState(0);
+
+  // Har du noe å betale med? Da skal Opus være det åpenbare valget.
+  const hasCredit = ppCount > 0 || (balance !== null && balance > 0);
   const [ready, setReady] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const sentDraft = useRef(false);
@@ -236,24 +238,36 @@ export function ChatApp() {
               <button
                 type="button"
                 onClick={() => selectTier("haiku")}
-                className={`rounded-[7px] px-3 py-1 transition ${
+                aria-pressed={tier === "haiku"}
+                className={`rounded-[7px] px-3 py-1 leading-tight transition ${
                   tier === "haiku"
                     ? "bg-surface-2 text-ink"
                     : "text-ink-faint hover:text-ink-dim"
                 }`}
               >
                 Haiku
+                <span className="ml-1.5 font-mono text-[10px] text-ink-faint">
+                  gratis
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => selectTier("opus")}
-                className={`rounded-[7px] px-3 py-1 transition ${
+                aria-pressed={tier === "opus"}
+                className={`rounded-[7px] px-3 py-1 leading-tight transition ${
                   tier === "opus"
                     ? "bg-surface-2 text-ink"
                     : "text-ink-faint hover:text-ink-dim"
                 }`}
               >
                 Opus
+                <span
+                  className={`ml-1.5 font-mono text-[10px] ${
+                    tier === "opus" ? "text-accent-strong" : "text-ink-faint"
+                  }`}
+                >
+                  best
+                </span>
               </button>
             </div>
             <span className="hidden font-mono text-[12px] text-ink-faint sm:inline">
@@ -282,11 +296,20 @@ export function ChatApp() {
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-5">
         {ready && messages.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
             <p className="max-w-sm text-center text-[14px] leading-relaxed text-ink-faint">
               Still et spørsmål. Samtalen lagres kun i din nettleser og kan
               slettes når som helst.
             </p>
+            {hasCredit && tier === "haiku" && (
+              <button
+                type="button"
+                onClick={() => selectTier("opus")}
+                className="rounded-(--radius-ctl) border border-accent/40 px-4 py-2 text-[13px] text-accent-strong transition active:scale-[0.98] hover:bg-surface"
+              >
+                Du har kreditt. Bytt til Opus for merkbart bedre svar.
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-5 py-8">

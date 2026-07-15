@@ -2,6 +2,8 @@
 
 export const CODE_KEY = "robothjelp:code";
 export const BALANCE_KEY = "robothjelp:saldo_ore";
+/** Valgt modellnivå. Settes ved innløsning så chatten starter på betalt nivå. */
+export const TIER_KEY = "robothjelp:model";
 
 /** Pris per betalt svar, i øre. Kanonisk verdi; serveren gjenbruker denne. */
 export const PRICE_PER_ANSWER_ORE = 200;

@@ -6,6 +6,7 @@ import {
   BALANCE_KEY,
   CODE_KEY,
   PRICE_PER_ANSWER_ORE,
+  TIER_KEY,
   formatOre,
 } from "@/lib/credit";
 import { exchangeCodeForTokens, ppEnabled } from "@/lib/pp-client";
@@ -90,6 +91,9 @@ export function RedeemForm() {
         // Koden oppbevares kun i din nettleser, som et gavekort i lomma.
         localStorage.setItem(CODE_KEY, trimmed);
         localStorage.setItem(BALANCE_KEY, String(ore));
+        // Du har nettopp betalt for det beste nivået, så chatten skal starte
+        // der, ikke på gratismodellen.
+        localStorage.setItem(TIER_KEY, "opus");
       } catch {
         // Uten localStorage fungerer koden fortsatt, men må limes inn på nytt.
       }

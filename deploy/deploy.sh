@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Bygger standalone-utgaven lokalt og kopierer den til serveren.
-# Bruk: SERVER=bruker@robothjelp.no ./deploy/deploy.sh
+# Bygger standalone-utgaven lokalt og deployer til robothjelp.no-serveren.
+# Bruk: ./deploy/deploy.sh
 set -euo pipefail
 
-SERVER="${SERVER:?Sett SERVER=bruker@vert, f.eks. SERVER=jens@robothjelp.no}"
+SERVER="${SERVER:-root@167.233.142.138}"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/mediemonitor_hetzner}"
 DEST="${DEST:-/srv/robothjelp}"
+SSH="ssh -i $SSH_KEY"
 
 cd "$(dirname "$0")/.."
 
@@ -18,12 +20,11 @@ cp -R .next/standalone/. "$STAGE/"
 mkdir -p "$STAGE/.next"
 cp -R .next/static "$STAGE/.next/static"
 cp -R public "$STAGE/public"
-cp -R prisma/schema.prisma "$STAGE/schema.prisma"
 
 echo "==> Kopierer til $SERVER:$DEST"
-rsync -az --delete "$STAGE/" "$SERVER:$DEST/"
+rsync -az --delete -e "$SSH" "$STAGE/" "$SERVER:$DEST/"
 
-echo "==> Restarter tjenesten"
-ssh "$SERVER" "sudo systemctl restart robothjelp && systemctl is-active robothjelp"
+echo "==> Retter rettigheter og restarter"
+$SSH "$SERVER" "chmod 755 $DEST && chown -R robothjelp:robothjelp $DEST && systemctl restart robothjelp && sleep 2 && systemctl is-active robothjelp && curl -s -o /dev/null -w 'HTTP %{http_code}\n' http://127.0.0.1:3000/"
 
 echo "==> Ferdig. Sjekk https://robothjelp.no"

@@ -4,6 +4,8 @@
 
 generator client {
   provider = "prisma-client-js"
+  // "native" for lokal utvikling (macOS), debian-target for prod-serveren.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

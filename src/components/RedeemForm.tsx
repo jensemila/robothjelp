@@ -100,21 +100,41 @@ export function RedeemForm() {
   }
 
   if (saldoOre !== null) {
+    const exchanged = ppTotal !== null;
     return (
       <div className="rounded-card border border-accent/40 bg-surface p-7">
         <p className="font-mono text-[12px] uppercase tracking-widest text-accent-strong">
-          Koden er aktiv
+          {exchanged ? "Vekslet inn" : "Koden er aktiv"}
         </p>
         <p className="mt-3 text-3xl font-semibold tracking-tight">
-          {formatOre(saldoOre)}
+          {exchanged
+            ? `${ppTotal} anonyme svar`
+            : formatOre(saldoOre)}
         </p>
-        <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
-          Saldoen er klar til bruk med Opus-modellen. Koden er lagret i denne
-          nettleseren. Ta vare på den et trygt sted, for eksempel i en
-          passordhåndterer. Mister du den, kan vi ikke gjenopprette den.
-        </p>
+        {exchanged ? (
+          <div className="mt-2 space-y-2 text-[14px] leading-relaxed text-ink-dim">
+            <p>
+              Saldoen er flyttet ut av koden og inn i denne nettleseren. Koden
+              er derfor tom nå, og du trenger den ikke lenger. Du får ingen nye
+              koder: tokens er ikke noe du kan skrive inn et sted, de brukes
+              automatisk når du spør.
+            </p>
+            <p className="text-ink">
+              Verdien finnes nå kun i denne nettleseren. Sletter du
+              nettleserdataene for siden, eller bytter til en annen nettleser
+              eller enhet, er de {ppTotal} svarene borte. Vi kan ikke
+              gjenopprette dem, for vi vet ikke at de var dine.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
+            Saldoen er klar til bruk med Opus-modellen. Koden er lagret i denne
+            nettleseren. Ta vare på den et trygt sted, for eksempel i en
+            passordhåndterer. Mister du den, kan vi ikke gjenopprette den.
+          </p>
+        )}
 
-        {ppAvailable && (
+        {ppAvailable && !exchanged && (
           <div className="mt-6 rounded-(--radius-ctl) border border-line bg-bg p-4">
             <p className="text-[14px] font-medium">
               Privacy Pass: fjern siste kobling
@@ -122,13 +142,8 @@ export function RedeemForm() {
             <p className="mt-1 text-[13px] leading-relaxed text-ink-dim">
               Veksle saldoen inn i anonyme engangstokens. Da kan ikke engang
               serveren se hvilke betalte søk som hører sammen. Tokens lagres
-              kun i denne nettleseren.
+              kun i denne nettleseren, og kan ikke flyttes til en annen enhet.
             </p>
-            {ppTotal !== null && (
-              <p className="mt-2 text-[13px] text-accent-strong">
-                Du har nå {ppTotal} anonyme svar klare i denne nettleseren.
-              </p>
-            )}
             {ppError && (
               <p className="mt-2 text-[13px] text-danger" role="alert">
                 {ppError}

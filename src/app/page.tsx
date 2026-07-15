@@ -135,8 +135,15 @@ export default function Home() {
                 <h2 className="text-[15px] font-medium">Lightning</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
                   Betal med Bitcoin over Lightning hvis du ikke vil at noen
-                  skal vite at du er kunde hos oss i det hele tatt. Samme
-                  kode, samme saldo, ingen kundeforhold noe sted.
+                  skal vite at du er kunde hos oss i det hele tatt. Da må du
+                  betale fra din egen lommebok, ikke rett fra en børs.{" "}
+                  <Link
+                    href="/anonymt"
+                    className="text-ink underline underline-offset-4"
+                  >
+                    Slik gjør du det
+                  </Link>
+                  .
                 </p>
               </div>
             </div>

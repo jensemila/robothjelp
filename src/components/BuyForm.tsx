@@ -101,11 +101,24 @@ export function BuyForm() {
         >
           <span className="text-[15px] font-medium">Lightning</span>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-dim">
-            Bitcoin over Lightning. Ingen vet at du er kunde hos oss i det
-            hele tatt.
+            Bitcoin over Lightning. Betal fra din egen lommebok, så vet ingen
+            at du er kunde hos oss.
           </p>
         </button>
       </div>
+
+      {method === "lightning" && (
+        <p className="mt-4 text-[13px] leading-relaxed text-ink-dim">
+          Betaler du rett fra en børs, vet børsen at du betalte oss.{" "}
+          <Link
+            href="/anonymt"
+            className="text-ink underline underline-offset-4"
+          >
+            Slik kjøper du helt anonymt
+          </Link>
+          .
+        </p>
+      )}
 
       <p className="mt-6 text-[13px] leading-relaxed text-ink-faint">
         Koden vises én gang etter betaling og er som kontanter: mister du den,

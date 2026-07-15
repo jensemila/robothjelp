@@ -31,6 +31,7 @@ const QA: { question: string; answer: string[] }[] = [
     question: "«Vipps vet jo hvem jeg er, da er anonymiteten borte.»",
     answer: [
       "Vipps ser at du kjøpte en kredittkode av oss. Det er alt. Koden aktiveres uten kobling til kjøpet, og vi lagrer ikke hvilken kode som gikk til hvilken betaling etter utstedelse. Så selv med full innsikt i betalingen finnes det ingen vei fra «Ola betalte 49 kr» til «dette spurte Ola om». Vil du ikke at noen skal vite at du er kunde hos oss i det hele tatt, bruker du Lightning.",
+      "Men da skal vi være presise, for her er det lett å overselge: en norsk bitcoin-børs krever legitimasjon og vet hvem du er. Betaler du rett fra børsen til oss, sitter børsen igjen med en logg over at du betalte nettopp oss, og den kan kreves utlevert. Skal Lightning faktisk gi deg anonymitet, må du ta bitcoin ut til din egen lommebok først og betale derfra. Da vet børsen at du kjøpte bitcoin, men ikke hva du brukte den til. Vi har skrevet en oppskrift på det.",
     ],
   },
   {

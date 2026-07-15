@@ -14,7 +14,7 @@ const TRUST_POINTS = [
   },
   {
     label: "Åpen kildekode",
-    body: "Du trenger ikke tro på oss. Koden er åpen, så du kan lese nøyaktig hva serveren gjør med hvert eneste kall.",
+    body: "Hele tjenesten ligger på GitHub. Åpenhetssiden lister uttømmende hva som lagres, og du kan sjekke den listen mot koden linje for linje.",
   },
 ];
 
@@ -44,7 +44,51 @@ export default function Home() {
             <p className="font-mono text-[12px] uppercase tracking-widest text-ink-faint">
               Slik virker det
             </p>
-            <div className="mt-8 grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-3">
+
+            <div className="mt-8 rounded-card border border-line bg-surface p-7 sm:p-9">
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                Hvordan er det mulig?
+              </h2>
+
+              <div className="mt-6 flex flex-col gap-3 font-mono text-[13px] sm:flex-row sm:items-center sm:gap-4">
+                <span className="rounded-(--radius-ctl) border border-line-strong px-3 py-2 text-ink">
+                  Din nettleser
+                </span>
+                <span aria-hidden className="text-ink-faint sm:px-1">
+                  ▸
+                </span>
+                <span className="rounded-(--radius-ctl) border border-accent/40 px-3 py-2 text-accent-strong">
+                  Vår server
+                </span>
+                <span aria-hidden className="text-ink-faint sm:px-1">
+                  ▸
+                </span>
+                <span className="rounded-(--radius-ctl) border border-line-strong px-3 py-2 text-ink">
+                  Claude
+                </span>
+              </div>
+
+              <div className="mt-6 max-w-2xl space-y-3 text-[15px] leading-relaxed text-ink-dim">
+                <p>
+                  Serveren vår er et rør, ikke et arkiv. Spørsmålet ditt
+                  streames gjennom i sanntid og svaret tilbake, uten å være
+                  innom disk underveis.
+                </p>
+                <p>
+                  Vi sender det videre fra én felles bedriftskonto, så
+                  Anthropic ser at noen spurte, ikke at du gjorde det. Og
+                  siden det ikke finnes kontoer hos oss, finnes det ingenting
+                  å koble en logg til. Historikken din lagres i din egen
+                  nettleser, ikke hos oss.
+                </p>
+                <p className="text-ink">
+                  Du trenger ikke tro på oss. Koden er åpen, så du kan lese
+                  nøyaktig hva serveren gjør med hvert eneste kall.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-3">
               {TRUST_POINTS.map((point) => (
                 <div key={point.label} className="bg-surface p-6">
                   <h2 className="text-[15px] font-medium">{point.label}</h2>

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "gen-code": "tsx scripts/generate-code.ts",
-    "gen-pp-keys": "tsx scripts/generate-pp-keys.ts"
+    "gen-pp-keys": "tsx scripts/generate-pp-keys.ts",
+    "mint-codes": "tsx scripts/mint-codes.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",

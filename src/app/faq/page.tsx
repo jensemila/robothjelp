@@ -49,6 +49,16 @@ const QA: { question: string; answer: string[] }[] = [
   },
   {
     question:
+      "«Dette er ikke ekte anonymitet. Bare en lokal modell er det.»",
+    answer: [
+      "Her har du rett i noe viktig, så la oss være presise. En modell som kjører på din egen maskin er den eneste måten å oppnå at ingen andre ser innholdet i det hele tatt. Det gir vi deg ikke, og vi har aldri påstått det heller. Anthropic ser spørsmålene dine.",
+      "Men anonymitet og konfidensialitet er to forskjellige ting. Konfidensialitet er om noen ser innholdet overhodet. Anonymitet er om innholdet kan kobles til deg. Hos en vanlig KI-tjeneste med konto har du ingen av delene: de ser hva du spør om, og de vet at det var du. Hos oss ser Anthropic hva noen spurte om, men ingen vet at det var du. Med en lokal modell har du begge deler. Det er tre forskjellige nivåer, ikke to.",
+      "Og et poeng som fortjener å innrømmes: innholdet kan avsløre deg uansett hvordan vi bygger dette. Skriver du navnet ditt, arbeidsgiveren din og hjemstedet ditt inn i spørsmålet, hjelper det ingenting at det ikke finnes noen konto. Ingen mellomledd kan beskytte deg mot at du identifiserer deg selv i teksten. Bare en lokal modell kan det.",
+      "Så er lokalt bedre? For ren konfidensialitet, ja, utvilsomt. Kan du sette opp en lokal modell og er fornøyd med kvaliteten den gir, bør du gjøre det. Men det krever maskinvare og teknisk kompetanse, og modellene du får kjørt hjemme er merkbart svakere enn de beste. Vi prøver ikke å slå en lokal modell på personvern. Vi finnes for dem som vil ha markedets beste modeller uten at navnet henger ved, og som ikke kommer til å sette opp noe på egen maskin uansett.",
+    ],
+  },
+  {
+    question:
       "«Anonym kreditt betyr at dere kan stjele pengene mine. Mister jeg koden, er pengene borte.»",
     answer: [
       "Ja, en kredittkode er som kontanter: mister du den, er den borte, og vi kan ikke hjelpe deg, for vi vet ikke hvem den tilhørte. Det er prisen for at ingen andre kan koble den til deg heller. Derfor selger vi små valører (fra 49 kr), så eksponeringen din er begrenset. Og fordi koden er ihendehaverbevis, kan du oppbevare den i din egen passordhåndterer, akkurat som et gavekort.",

@@ -15,5 +15,5 @@ export const LEGAL_NAME = "Klarlinje Asp";
 export const ORG_NR = "936 712 940";
 export const LEGAL_ADDRESS = "Møllergata 6, 0179 Oslo";
 
-// Kontaktpunkt for reklamasjon og henvendelser (fyll inn før lansering).
-export const CONTACT_EMAIL = "[E-POSTADRESSE]";
+// Kontaktpunkt for reklamasjon og henvendelser.
+export const CONTACT_EMAIL = "media@robotpartner.no";

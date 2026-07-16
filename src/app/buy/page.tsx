@@ -16,8 +16,9 @@ export default function BuyPage() {
           Kjøp kreditt
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-dim">
-          Kreditt gir tilgang til Opus, den beste modellen på markedet.
-          Saldoen trekkes per svar, for tiden 2 kr per svar.
+          Kreditt gir tilgang til de betalte modellene. Du velger selv hvilken
+          du vil bruke, og saldoen trekkes per svar: Sonnet 1 kr, Opus 2 kr,
+          Fable 5 kr. Haiku er alltid gratis.
         </p>
         <div className="mt-10">
           <BuyForm />

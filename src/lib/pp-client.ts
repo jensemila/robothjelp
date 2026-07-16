@@ -5,7 +5,8 @@ import { b64ToU8, u8ToB64 } from "@/lib/b64";
 
 // Privacy Pass i nettleseren: blinder tilfeldige meldinger, får dem
 // blindsignert av serveren, og lagrer ferdige tokens i localStorage.
-// Hvert token er ett betalt svar, og kan ikke kobles til koden det kom fra.
+// Hvert token er verdt én krone og kan ikke kobles til koden det kom fra.
+// Et svar koster like mange tokens som modellen koster kroner.
 
 export const PP_TOKENS_KEY = "robothjelp:pp_tokens";
 
@@ -32,11 +33,23 @@ function saveTokens(tokens: PpToken[]) {
   }
 }
 
-export function popToken(): PpToken | null {
+/**
+ * Tar `count` tokens ut av lageret. Returnerer null hvis du ikke har nok,
+ * uten å røre lageret. Feiler kallet etterpå, legg dem tilbake med
+ * `returnTokens` så de ikke går tapt.
+ */
+export function popTokens(count: number): PpToken[] | null {
   const tokens = loadTokens();
-  const token = tokens.pop() ?? null;
-  if (token) saveTokens(tokens);
-  return token;
+  if (count <= 0 || tokens.length < count) return null;
+  const taken = tokens.splice(tokens.length - count, count);
+  saveTokens(tokens);
+  return taken;
+}
+
+/** Legger ubrukte tokens tilbake, for eksempel hvis nettverket sviktet. */
+export function returnTokens(taken: PpToken[]) {
+  if (taken.length === 0) return;
+  saveTokens([...loadTokens(), ...taken]);
 }
 
 export function tokenCount(): number {

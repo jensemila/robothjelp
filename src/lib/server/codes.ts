@@ -38,4 +38,3 @@ export function hashCode(normalizedCode: string): string {
   return createHash("sha256").update(normalizedCode).digest("hex");
 }
 
-export { PRICE_PER_ANSWER_ORE } from "@/lib/credit";

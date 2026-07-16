@@ -2,16 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  BALANCE_KEY,
-  CODE_KEY,
-  PRICE_PER_ANSWER_ORE,
-  TIER_KEY,
-  formatOre,
-} from "@/lib/credit";
+import { BALANCE_KEY, CODE_KEY, TIER_KEY, formatOre } from "@/lib/credit";
+import { TOKEN_VALUE_ORE } from "@/lib/models";
 import { exchangeCodeForTokens, ppEnabled } from "@/lib/pp-client";
 
-const MAX_TOKENS_PER_EXCHANGE = 100;
+const MAX_TOKENS_PER_EXCHANGE = 200;
 
 export function RedeemForm() {
   const [code, setCode] = useState("");
@@ -37,7 +32,7 @@ export function RedeemForm() {
   async function exchangeAll() {
     if (ppBusy || saldoOre === null) return;
     const count = Math.min(
-      Math.floor(saldoOre / PRICE_PER_ANSWER_ORE),
+      Math.floor(saldoOre / TOKEN_VALUE_ORE),
       MAX_TOKENS_PER_EXCHANGE,
     );
     if (count === 0) {
@@ -48,7 +43,7 @@ export function RedeemForm() {
     setPpError(null);
     try {
       const total = await exchangeCodeForTokens(code.trim(), count);
-      const newBalance = saldoOre - count * PRICE_PER_ANSWER_ORE;
+      const newBalance = saldoOre - count * TOKEN_VALUE_ORE;
       setPpTotal(total);
       setSaldoOre(newBalance);
       try {
@@ -113,33 +108,37 @@ export function RedeemForm() {
         </p>
         <p className="mt-3 text-3xl font-semibold tracking-tight">
           {exchanged
-            ? `${ppTotal} anonyme svar`
+            ? `${formatOre((ppTotal ?? 0) * TOKEN_VALUE_ORE)} anonymt`
             : formatOre(saldoOre)}
         </p>
         {exchanged ? (
           <div className="mt-2 space-y-2 text-[14px] leading-relaxed text-ink-dim">
             <p>
-              Saldoen er flyttet ut av koden og inn i denne nettleseren. Koden
-              er derfor tom nå, og du trenger den ikke lenger. Du får ingen nye
-              koder: tokens er ikke noe du kan skrive inn et sted, de brukes
-              automatisk når du spør.
+              Saldoen er flyttet ut av koden og inn i denne nettleseren, som{" "}
+              {ppTotal} anonyme mynter à én krone. Koden er derfor tom nå, og
+              du trenger den ikke lenger. Du får ingen nye koder: mynter er
+              ikke noe du kan skrive inn et sted, de brukes automatisk når du
+              spør. Et svar koster like mange mynter som modellen koster
+              kroner.
             </p>
             <p className="text-ink">
               Verdien finnes nå kun i denne nettleseren. Sletter du
               nettleserdataene for siden, eller bytter til en annen nettleser
-              eller enhet, er de {ppTotal} svarene borte. Vi kan ikke
-              gjenopprette dem, for vi vet ikke at de var dine.
+              eller enhet, er de {formatOre((ppTotal ?? 0) * TOKEN_VALUE_ORE)}{" "}
+              borte. Vi kan ikke gjenopprette dem, for vi vet ikke at de var
+              dine.
             </p>
           </div>
         ) : (
           <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
-            Saldoen er klar til bruk med Opus-modellen. Koden er lagret i denne
-            nettleseren. Ta vare på den et trygt sted, for eksempel i en
-            passordhåndterer. Mister du den, kan vi ikke gjenopprette den.
+            Saldoen er klar til bruk. Velg selv hvilken modell du vil bruke i
+            chatten: jo bedre modell, jo raskere går kreditten. Koden er lagret
+            i denne nettleseren. Ta vare på den et trygt sted, for eksempel i
+            en passordhåndterer. Mister du den, kan vi ikke gjenopprette den.
           </p>
         )}
 
-        {ppAvailable && !exchanged && saldoOre >= PRICE_PER_ANSWER_ORE && (
+        {ppAvailable && !exchanged && saldoOre >= TOKEN_VALUE_ORE && (
           <div className="mt-6 rounded-(--radius-ctl) border border-line bg-bg p-4">
             <p className="text-[14px] font-medium">
               Privacy Pass: fjern siste kobling
@@ -190,9 +189,9 @@ export function RedeemForm() {
                       nettleser, eller bytter enhet, er{" "}
                       {formatOre(
                         Math.min(
-                          Math.floor(saldoOre / PRICE_PER_ANSWER_ORE),
+                          Math.floor(saldoOre / TOKEN_VALUE_ORE),
                           MAX_TOKENS_PER_EXCHANGE,
-                        ) * PRICE_PER_ANSWER_ORE,
+                        ) * TOKEN_VALUE_ORE,
                       )}{" "}
                       borte for godt. Vi kan ikke gjenopprette dem, for vi vet
                       ikke at de var dine.
@@ -208,10 +207,12 @@ export function RedeemForm() {
                   >
                     {ppBusy
                       ? "Veksler…"
-                      : `Jeg forstår, veksle inn ${Math.min(
-                          Math.floor(saldoOre / PRICE_PER_ANSWER_ORE),
-                          MAX_TOKENS_PER_EXCHANGE,
-                        )} svar`}
+                      : `Jeg forstår, veksle inn ${formatOre(
+                          Math.min(
+                            Math.floor(saldoOre / TOKEN_VALUE_ORE),
+                            MAX_TOKENS_PER_EXCHANGE,
+                          ) * TOKEN_VALUE_ORE,
+                        )}`}
                   </button>
                   <button
                     type="button"

@@ -56,31 +56,49 @@ export async function blindSignBatch(blindedB64: string[]): Promise<string[]> {
   return signatures;
 }
 
+export type PpToken = { message: string; signature: string };
+
 /**
- * Verifiserer et token og markerer det som brukt, atomisk.
- * Returnerer false ved ugyldig signatur eller gjenbruk.
+ * Verifiserer og bruker opp flere tokens i én operasjon, alt-eller-ingenting.
+ *
+ * Rekkefølgen er viktig: ALLE signaturer verifiseres før noe skrives, og
+ * innskrivingen skjer i én transaksjon. Ellers ville et svar til fem tokens
+ * brent de fire første før det femte viste seg å være ugyldig.
+ *
+ * Returnerer false ved ugyldig signatur, gjenbruk, eller samme token oppgitt
+ * flere ganger i samme forespørsel.
  */
-export async function spendToken(
-  messageB64: string,
-  signatureB64: string,
-): Promise<boolean> {
+export async function spendTokens(tokens: PpToken[]): Promise<boolean> {
+  if (tokens.length === 0) return false;
+
+  // 1) Verifiser alle signaturer. Ingen skriving her.
   try {
-    const valid = await suite.verify(
-      await publicKey(),
-      b64ToU8(signatureB64),
-      b64ToU8(messageB64),
-    );
-    if (!valid) return false;
+    const key = await publicKey();
+    for (const token of tokens) {
+      const valid = await suite.verify(
+        key,
+        b64ToU8(token.signature),
+        b64ToU8(token.message),
+      );
+      if (!valid) return false;
+    }
   } catch {
     return false;
   }
 
-  const tokenHash = createHash("sha256").update(messageB64).digest("hex");
+  // 2) Avvis samme token oppgitt flere ganger i samme forespørsel.
+  const hashes = tokens.map((token) =>
+    createHash("sha256").update(token.message).digest("hex"),
+  );
+  if (new Set(hashes).size !== hashes.length) return false;
+
+  // 3) Brenn alle i én transaksjon. Er ett brukt fra før, rulles alt tilbake.
   try {
-    await prisma.spentToken.create({ data: { tokenHash } });
+    await prisma.$transaction(
+      hashes.map((tokenHash) => prisma.spentToken.create({ data: { tokenHash } })),
+    );
     return true;
   } catch {
-    // Unik-brudd: tokenet er allerede brukt.
     return false;
   }
 }

@@ -1,13 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MODEL_TIERS, isModelTier } from "@/lib/models";
 import {
-  PRICE_PER_ANSWER_ORE,
-  hashCode,
-  normalizeCode,
-} from "@/lib/server/codes";
+  MODEL_TIERS,
+  isModelTier,
+  isPaidTier,
+  priceOre,
+  tokensFor,
+} from "@/lib/models";
+import { hashCode, normalizeCode } from "@/lib/server/codes";
 import { prisma } from "@/lib/server/db";
 import { verifySolution } from "@/lib/server/pow";
-import { ppConfigured, spendToken } from "@/lib/server/privacypass";
+import { ppConfigured, spendTokens } from "@/lib/server/privacypass";
 import { allowRequest } from "@/lib/server/ratelimit";
 
 // Personvernkrav (PLAN.md seksjon 10): denne handleren logger ALDRI IP,
@@ -56,6 +58,39 @@ function jsonError(status: number, message: string) {
   return Response.json({ error: message }, { status });
 }
 
+const MAX_B64_LENGTH = 1024;
+const MAX_TOKENS_PER_ANSWER = 20;
+
+/** Returnerer tokens hvis lista er velformet, ellers null (= ikke oppgitt). */
+function validateTokens(
+  value: unknown,
+): { message: string; signature: string }[] | null {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > MAX_TOKENS_PER_ANSWER
+  ) {
+    return null;
+  }
+  const tokens: { message: string; signature: string }[] = [];
+  for (const item of value) {
+    if (
+      typeof item !== "object" ||
+      item === null ||
+      typeof item.message !== "string" ||
+      typeof item.signature !== "string" ||
+      item.message.length === 0 ||
+      item.signature.length === 0 ||
+      item.message.length > MAX_B64_LENGTH ||
+      item.signature.length > MAX_B64_LENGTH
+    ) {
+      return null;
+    }
+    tokens.push({ message: item.message, signature: item.signature });
+  }
+  return tokens;
+}
+
 export async function POST(request: Request) {
   if (!allowRequest(request)) {
     return jsonError(429, "For mange forespørsler. Vent litt og prøv igjen.");
@@ -72,16 +107,14 @@ export async function POST(request: Request) {
     messages: rawMessages,
     model: rawModel,
     code: rawCode,
-    pp_message: ppMessage,
-    pp_signature: ppSignature,
+    pp_tokens: rawPpTokens,
     pow_challenge: powChallenge,
     pow_solution: powSolution,
   } = body as {
     messages?: unknown;
     model?: unknown;
     code?: unknown;
-    pp_message?: unknown;
-    pp_signature?: unknown;
+    pp_tokens?: unknown;
     pow_challenge?: unknown;
     pow_solution?: unknown;
   };
@@ -102,53 +135,64 @@ export async function POST(request: Request) {
   }
 
   // Betalt nivå. To veier:
-  //  1) Privacy Pass-token: serveren kan verifisere at tokenet er ekte,
-  //     men ikke koble det til kode, kjøp eller andre søk.
+  //  1) Privacy Pass-tokens: serveren verifiserer at de er ekte, men kan ikke
+  //     koble dem til kode, kjøp eller andre søk. Et svar koster like mange
+  //     tokens som modellen koster kroner.
   //  2) Kredittkode (MVP): saldo trekkes atomisk FØR svaret genereres.
   //     Koden lagres aldri i klartekst; kun hashen brukes til oppslag.
+  const costOre = priceOre(tier);
   let remainingOre: number | null = null;
   let paidCodeHash: string | null = null;
-  if (
-    MODEL_TIERS[tier].paid &&
-    typeof ppMessage === "string" &&
-    typeof ppSignature === "string"
-  ) {
-    if (!ppConfigured()) {
-      return jsonError(503, "Privacy Pass er ikke aktivert på serveren.");
+
+  if (isPaidTier(tier)) {
+    const ppTokens = validateTokens(rawPpTokens);
+
+    if (ppTokens) {
+      if (!ppConfigured()) {
+        return jsonError(503, "Privacy Pass er ikke aktivert på serveren.");
+      }
+      const needed = tokensFor(tier);
+      if (ppTokens.length !== needed) {
+        return jsonError(
+          402,
+          `${MODEL_TIERS[tier].label} koster ${needed} ${
+            needed === 1 ? "token" : "tokens"
+          } per svar.`,
+        );
+      }
+      if (!(await spendTokens(ppTokens))) {
+        return jsonError(
+          402,
+          "Ugyldige eller allerede brukte tokens. Veksle inn flere fra koden din.",
+        );
+      }
+    } else {
+      const normalized =
+        typeof rawCode === "string" ? normalizeCode(rawCode) : null;
+      if (!normalized) {
+        return jsonError(
+          402,
+          `${MODEL_TIERS[tier].label} krever kreditt. Løs inn en kode først.`,
+        );
+      }
+      const codeHash = hashCode(normalized);
+      const deducted = await prisma.creditCode.updateMany({
+        where: { codeHash, saldoOre: { gte: costOre } },
+        data: { saldoOre: { decrement: costOre } },
+      });
+      if (deducted.count === 0) {
+        return jsonError(
+          402,
+          "Ikke nok saldo på koden. Kjøp en ny kode, eller velg en rimeligere modell.",
+        );
+      }
+      paidCodeHash = codeHash;
+      const entry = await prisma.creditCode.findUnique({
+        where: { codeHash },
+        select: { saldoOre: true },
+      });
+      remainingOre = entry?.saldoOre ?? null;
     }
-    if (
-      ppMessage.length > 1024 ||
-      ppSignature.length > 1024 ||
-      !(await spendToken(ppMessage, ppSignature))
-    ) {
-      return jsonError(
-        402,
-        "Ugyldig eller allerede brukt token. Veksle inn flere fra koden din.",
-      );
-    }
-  } else if (MODEL_TIERS[tier].paid) {
-    const normalized =
-      typeof rawCode === "string" ? normalizeCode(rawCode) : null;
-    if (!normalized) {
-      return jsonError(402, "Opus krever kreditt. Løs inn en kode først.");
-    }
-    const codeHash = hashCode(normalized);
-    const deducted = await prisma.creditCode.updateMany({
-      where: { codeHash, saldoOre: { gte: PRICE_PER_ANSWER_ORE } },
-      data: { saldoOre: { decrement: PRICE_PER_ANSWER_ORE } },
-    });
-    if (deducted.count === 0) {
-      return jsonError(
-        402,
-        "Ikke nok saldo på koden. Kjøp en ny kode for å fortsette.",
-      );
-    }
-    paidCodeHash = codeHash;
-    const entry = await prisma.creditCode.findUnique({
-      where: { codeHash },
-      select: { saldoOre: true },
-    });
-    remainingOre = entry?.saldoOre ?? null;
   }
 
   const client = new Anthropic({ apiKey });
@@ -159,6 +203,23 @@ export async function POST(request: Request) {
       const send = (data: object) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
       };
+      // Refunderer et betalt svar som ikke ble levert. Gjelder kun
+      // kredittkode: brukte tokens kan ikke gis tilbake uten å gjøre dem
+      // sporbare, som er hele poenget med dem.
+      const refund = async () => {
+        if (!paidCodeHash) return;
+        try {
+          const entry = await prisma.creditCode.update({
+            where: { codeHash: paidCodeHash },
+            data: { saldoOre: { increment: costOre } },
+            select: { saldoOre: true },
+          });
+          remainingOre = entry.saldoOre;
+        } catch {
+          // Refusjon er beste forsøk.
+        }
+      };
+
       try {
         const anthropicStream = client.messages.stream({
           model: MODEL_TIERS[tier].id,
@@ -175,6 +236,20 @@ export async function POST(request: Request) {
           }
         }
         const final = await anthropicStream.finalMessage();
+
+        // Sikkerhetsklassifiserere kan avvise en forespørsel. Da kommer det
+        // ingen tekst, så svaret skal ikke betales for.
+        if (final.stop_reason === "refusal") {
+          await refund();
+          send({
+            type: "error",
+            message:
+              "Modellen kunne ikke svare på dette. Du er ikke belastet.",
+            ...(remainingOre !== null ? { saldo_ore: remainingOre } : {}),
+          });
+          return;
+        }
+
         send({
           type: "done",
           stopReason: final.stop_reason,
@@ -182,18 +257,12 @@ export async function POST(request: Request) {
         });
       } catch {
         // Ingen detaljer logges eller videresendes; klienten får en generisk feil.
-        // Feilet betalt svar refunderes.
-        if (paidCodeHash) {
-          try {
-            await prisma.creditCode.update({
-              where: { codeHash: paidCodeHash },
-              data: { saldoOre: { increment: PRICE_PER_ANSWER_ORE } },
-            });
-          } catch {
-            // Refusjon er beste forsøk.
-          }
-        }
-        send({ type: "error", message: "Noe gikk galt. Prøv igjen." });
+        await refund();
+        send({
+          type: "error",
+          message: "Noe gikk galt. Prøv igjen.",
+          ...(remainingOre !== null ? { saldo_ore: remainingOre } : {}),
+        });
       } finally {
         controller.close();
       }

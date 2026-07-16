@@ -4,9 +4,22 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BALANCE_KEY, CODE_KEY, TIER_KEY, formatOre } from "@/lib/credit";
 import { DRAFT_KEY } from "@/lib/draft";
-import type { ModelTier } from "@/lib/models";
+import {
+  MODEL_ORDER,
+  MODEL_TIERS,
+  type ModelTier,
+  TOKEN_VALUE_ORE,
+  isPaidTier,
+  tokensFor,
+} from "@/lib/models";
 import { fetchAndSolvePow } from "@/lib/pow-client";
-import { loadTokens, popToken, tokenCount } from "@/lib/pp-client";
+import {
+  type PpToken,
+  loadTokens,
+  popTokens,
+  returnTokens,
+  tokenCount,
+} from "@/lib/pp-client";
 import { SITE_NAME } from "@/lib/site";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -56,15 +69,17 @@ export function ChatApp() {
         ]);
       };
 
+      // Mynter tatt ut for dette svaret. Går kallet galt, legges de tilbake.
+      let spentTokens: PpToken[] | null = null;
+
       try {
         const pow = await fetchAndSolvePow();
-        // Betalt nivå: bruk Privacy Pass-token hvis vi har, ellers koden.
+        // Betalt nivå: bruk Privacy Pass-mynter hvis vi har nok, ellers koden.
         let code: string | null = null;
-        let ppToken: { message: string; signature: string } | null = null;
-        if (activeTier === "opus") {
-          ppToken = popToken();
+        if (isPaidTier(activeTier)) {
+          spentTokens = popTokens(tokensFor(activeTier));
           setPpCount(tokenCount());
-          if (!ppToken) {
+          if (!spentTokens) {
             try {
               code = localStorage.getItem(CODE_KEY);
             } catch {
@@ -78,8 +93,8 @@ export function ChatApp() {
           body: JSON.stringify({
             messages: outgoing,
             model: activeTier,
-            ...(ppToken
-              ? { pp_message: ppToken.message, pp_signature: ppToken.signature }
+            ...(spentTokens
+              ? { pp_tokens: spentTokens }
               : code
                 ? { code }
                 : {}),
@@ -89,6 +104,12 @@ export function ChatApp() {
 
         if (!response.ok || !response.body) {
           const data = await response.json().catch(() => null);
+          // Serveren avviste før den brukte myntene: ta dem tilbake.
+          if (spentTokens) {
+            returnTokens(spentTokens);
+            spentTokens = null;
+            setPpCount(tokenCount());
+          }
           setMessages(outgoing);
           setError(data?.error ?? "Noe gikk galt. Prøv igjen.");
           return;
@@ -116,18 +137,18 @@ export function ChatApp() {
             } catch {
               continue;
             }
+            // Saldoen kan følge med både «done» og «error» (refusjon).
+            if (typeof event.saldo_ore === "number") {
+              setBalance(event.saldo_ore);
+              try {
+                localStorage.setItem(BALANCE_KEY, String(event.saldo_ore));
+              } catch {
+                // Ikke kritisk.
+              }
+            }
             if (event.type === "text" && event.text) {
               assistantText += event.text;
               commit();
-            } else if (event.type === "done") {
-              if (typeof event.saldo_ore === "number") {
-                setBalance(event.saldo_ore);
-                try {
-                  localStorage.setItem(BALANCE_KEY, String(event.saldo_ore));
-                } catch {
-                  // Ikke kritisk.
-                }
-              }
             } else if (event.type === "error") {
               setError(event.message ?? "Noe gikk galt. Prøv igjen.");
             }
@@ -150,6 +171,11 @@ export function ChatApp() {
           }
         }
       } catch {
+        // Nettverket sviktet, så myntene ble aldri brukt. Ta dem tilbake.
+        if (spentTokens) {
+          returnTokens(spentTokens);
+          setPpCount(tokenCount());
+        }
         setMessages(outgoing);
         setError("Fikk ikke kontakt med serveren. Prøv igjen.");
       } finally {
@@ -235,44 +261,43 @@ export function ChatApp() {
               aria-label="Modellvalg"
               className="flex rounded-(--radius-ctl) border border-line p-0.5 text-[13px]"
             >
-              <button
-                type="button"
-                onClick={() => selectTier("haiku")}
-                aria-pressed={tier === "haiku"}
-                className={`rounded-[7px] px-3 py-1 leading-tight transition ${
-                  tier === "haiku"
-                    ? "bg-surface-2 text-ink"
-                    : "text-ink-faint hover:text-ink-dim"
-                }`}
-              >
-                Haiku
-                <span className="ml-1.5 font-mono text-[10px] text-ink-faint">
-                  gratis
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => selectTier("opus")}
-                aria-pressed={tier === "opus"}
-                className={`rounded-[7px] px-3 py-1 leading-tight transition ${
-                  tier === "opus"
-                    ? "bg-surface-2 text-ink"
-                    : "text-ink-faint hover:text-ink-dim"
-                }`}
-              >
-                Opus
-                <span
-                  className={`ml-1.5 font-mono text-[10px] ${
-                    tier === "opus" ? "text-accent-strong" : "text-ink-faint"
-                  }`}
-                >
-                  best
-                </span>
-              </button>
+              {MODEL_ORDER.map((key) => {
+                const model = MODEL_TIERS[key];
+                const active = tier === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => selectTier(key)}
+                    aria-pressed={active}
+                    title={`${model.description} ${
+                      model.priceOre === 0
+                        ? "Gratis."
+                        : `${formatOre(model.priceOre)} per svar.`
+                    }`}
+                    className={`rounded-[7px] px-2.5 py-1 leading-tight transition ${
+                      active
+                        ? "bg-surface-2 text-ink"
+                        : "text-ink-faint hover:text-ink-dim"
+                    }`}
+                  >
+                    {model.label}
+                    <span
+                      className={`ml-1.5 hidden font-mono text-[10px] sm:inline ${
+                        active ? "text-accent-strong" : "text-ink-faint"
+                      }`}
+                    >
+                      {model.priceOre === 0
+                        ? "gratis"
+                        : formatOre(model.priceOre)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             <span className="hidden font-mono text-[12px] text-ink-faint sm:inline">
               {ppCount > 0
-                ? `${ppCount} anonyme svar igjen`
+                ? `${formatOre(ppCount * TOKEN_VALUE_ORE)} anonymt`
                 : balance === null
                   ? "Ingen kreditt"
                   : `Saldo: ${formatOre(balance)}`}
@@ -309,6 +334,13 @@ export function ChatApp() {
               >
                 Du har kreditt. Bytt til Opus for merkbart bedre svar.
               </button>
+            )}
+            {isPaidTier(tier) && (
+              <p className="font-mono text-[11px] text-ink-faint">
+                {MODEL_TIERS[tier].label} koster{" "}
+                {formatOre(MODEL_TIERS[tier].priceOre)} per svar
+                {ppCount > 0 && ` (${tokensFor(tier)} mynter)`}
+              </p>
             )}
           </div>
         ) : (

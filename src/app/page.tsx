@@ -157,9 +157,10 @@ export default function Home() {
                   fra 49 kr
                 </p>
                 <ul className="mt-5 space-y-2 text-[14px] leading-relaxed text-ink-dim">
-                  <li>Opus-modellen, den beste på markedet</li>
-                  <li>Kreditt trekkes per svar</li>
+                  <li>Sonnet, Opus og Fable, markedets beste modeller</li>
+                  <li>Du velger modell. Sonnet 1 kr, Opus 2 kr, Fable 5 kr</li>
                   <li>Koden er anonym og ikke knyttet til deg</li>
+                  <li>Fra 20 kr hvis du betaler med Lightning</li>
                 </ul>
                 <Link
                   href="/buy"

@@ -1,8 +1,5 @@
-import {
-  PRICE_PER_ANSWER_ORE,
-  hashCode,
-  normalizeCode,
-} from "@/lib/server/codes";
+import { TOKEN_VALUE_ORE } from "@/lib/models";
+import { hashCode, normalizeCode } from "@/lib/server/codes";
 import { prisma } from "@/lib/server/db";
 import { blindSignBatch, ppConfigured } from "@/lib/server/privacypass";
 import { allowRequest } from "@/lib/server/ratelimit";
@@ -13,7 +10,7 @@ import { allowRequest } from "@/lib/server/ratelimit";
 
 export const runtime = "nodejs";
 
-const MAX_TOKENS_PER_EXCHANGE = 100;
+const MAX_TOKENS_PER_EXCHANGE = 200;
 const MAX_BLINDED_LENGTH = 1024;
 
 export async function POST(request: Request) {
@@ -59,7 +56,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "Ugyldig forespørsel." }, { status: 400 });
   }
 
-  const costOre = blinded.length * PRICE_PER_ANSWER_ORE;
+  // Ett token = én krone.
+  const costOre = blinded.length * TOKEN_VALUE_ORE;
   const codeHash = hashCode(normalized);
 
   const deducted = await prisma.creditCode.updateMany({

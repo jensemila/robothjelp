@@ -9,6 +9,7 @@ import {
   MODEL_TIERS,
   type ModelTier,
   TOKEN_VALUE_ORE,
+  isModelTier,
   isPaidTier,
   tokensFor,
 } from "@/lib/models";
@@ -21,6 +22,7 @@ import {
   tokenCount,
 } from "@/lib/pp-client";
 import { SITE_NAME } from "@/lib/site";
+import { UpgradeHint } from "./UpgradeHint";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -49,7 +51,13 @@ export function ChatApp() {
 
   // Har du noe å betale med? Da skal Opus være det åpenbare valget.
   const hasCredit = ppCount > 0 || (balance !== null && balance > 0);
+
+  // Tips om betalte modeller er bare relevant for den som faktisk chatter
+  // gratis uten kreditt. Har du kreditt, eller ikke har spurt om noe, er det
+  // bare i veien.
   const [ready, setReady] = useState(false);
+  const showUpgradeHint =
+    ready && !hasCredit && tier === "haiku" && messages.length > 0;
   const bottomRef = useRef<HTMLDivElement>(null);
   const sentDraft = useRef(false);
 
@@ -192,7 +200,7 @@ export function ChatApp() {
     const history = loadHistory();
     setMessages(history);
     const storedTier = localStorage.getItem(TIER_KEY);
-    const activeTier: ModelTier = storedTier === "opus" ? "opus" : "haiku";
+    const activeTier: ModelTier = isModelTier(storedTier) ? storedTier : "haiku";
     setTier(activeTier);
     const storedBalance = localStorage.getItem(BALANCE_KEY);
     if (storedBalance !== null && !Number.isNaN(Number(storedBalance))) {
@@ -297,10 +305,10 @@ export function ChatApp() {
             </div>
             <span className="hidden font-mono text-[12px] text-ink-faint sm:inline">
               {ppCount > 0
-                ? `${formatOre(ppCount * TOKEN_VALUE_ORE)} anonymt`
+                ? `${formatOre(ppCount * TOKEN_VALUE_ORE)} igjen`
                 : balance === null
                   ? "Ingen kreditt"
-                  : `Saldo: ${formatOre(balance)}`}
+                  : `${formatOre(balance)} igjen`}
             </span>
             <Link
               href="/redeem"
@@ -399,6 +407,8 @@ export function ChatApp() {
           </button>
         </form>
       </div>
+
+      <UpgradeHint active={showUpgradeHint} />
     </div>
   );
 }

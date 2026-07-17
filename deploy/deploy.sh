@@ -27,4 +27,8 @@ rsync -az --delete -e "$SSH" "$STAGE/" "$SERVER:$DEST/"
 echo "==> Retter rettigheter og restarter"
 $SSH "$SERVER" "chmod 755 $DEST && chown -R robothjelp:robothjelp $DEST && systemctl restart robothjelp && sleep 2 && systemctl is-active robothjelp && curl -s -o /dev/null -w 'HTTP %{http_code}\n' http://127.0.0.1:3000/"
 
+echo "==> Synkroniserer nginx-config (personvern-headere + ingen logging)"
+rsync -az -e "$SSH" deploy/nginx-robothjelp.conf "$SERVER:/etc/nginx/sites-enabled/robothjelp"
+$SSH "$SERVER" "nginx -t && systemctl reload nginx"
+
 echo "==> Ferdig. Sjekk https://robothjelp.no"

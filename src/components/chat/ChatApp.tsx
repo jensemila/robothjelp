@@ -408,6 +408,19 @@ export function ChatApp() {
       </main>
 
       <div className="sticky bottom-0 border-t border-line bg-bg">
+        {isPaidTier(tier) && (
+          <div className="mx-auto max-w-3xl px-5 pt-2">
+            <p className="font-mono text-[11px] text-ink-faint">
+              {MODEL_TIERS[tier].label} · {formatOre(MODEL_TIERS[tier].priceOre)}{" "}
+              per svar
+              {ppCount > 0
+                ? ` · ${formatOre(ppCount * TOKEN_VALUE_ORE)} igjen`
+                : balance !== null
+                  ? ` · ${formatOre(balance)} igjen`
+                  : ""}
+            </p>
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();

@@ -6,6 +6,7 @@ import {
   priceOre,
   tokensFor,
 } from "@/lib/models";
+import { consumeFreeAnswer } from "@/lib/server/budget";
 import { hashCode, normalizeCode } from "@/lib/server/codes";
 import { prisma } from "@/lib/server/db";
 import { verifySolution } from "@/lib/server/pow";
@@ -198,6 +199,14 @@ export async function POST(request: Request) {
       });
       remainingOre = entry?.saldoOre ?? null;
     }
+  } else if (!consumeFreeAnswer()) {
+    // Gratisnivået har et globalt dagsbudsjett som beskytter regningen mot
+    // vedvarende misbruk. Trekkes etter at betaling er avklart, så et betalt
+    // svar aldri blokkeres av gratis-taket.
+    return jsonError(
+      429,
+      "Gratisnivået er brukt opp for i dag. Prøv igjen i morgen, eller bruk kreditt for å fortsette nå.",
+    );
   }
 
   const client = new Anthropic({ apiKey });

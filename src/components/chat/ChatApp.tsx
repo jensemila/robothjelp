@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BALANCE_KEY, CODE_KEY, TIER_KEY, formatOre } from "@/lib/credit";
 import { DRAFT_KEY } from "@/lib/draft";
@@ -28,6 +30,15 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 
 // All historikk ligger KUN i nettleseren (localStorage), aldri på serveren.
 const HISTORY_KEY = "robothjelp:history";
+const WEB_SEARCH_KEY = "robothjelp:websok";
+
+function webSearchEnabled(): boolean {
+  try {
+    return localStorage.getItem(WEB_SEARCH_KEY) !== "av";
+  } catch {
+    return true;
+  }
+}
 
 function loadHistory(): ChatMessage[] {
   try {
@@ -48,6 +59,7 @@ export function ChatApp() {
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [ppCount, setPpCount] = useState(0);
+  const [webSearch, setWebSearch] = useState(true);
 
   // Har du noe å betale med? Da skal Opus være det åpenbare valget.
   const hasCredit = ppCount > 0 || (balance !== null && balance > 0);
@@ -101,6 +113,7 @@ export function ChatApp() {
           body: JSON.stringify({
             messages: outgoing,
             model: activeTier,
+            web_search: webSearchEnabled(),
             ...(spentTokens
               ? { pp_tokens: spentTokens }
               : code
@@ -207,6 +220,7 @@ export function ChatApp() {
       setBalance(Number(storedBalance));
     }
     setPpCount(loadTokens().length);
+    setWebSearch(webSearchEnabled());
     setReady(true);
     /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -241,6 +255,16 @@ export function ChatApp() {
     setTier(next);
     try {
       localStorage.setItem(TIER_KEY, next);
+    } catch {
+      // Ikke kritisk.
+    }
+  }
+
+  function toggleWebSearch() {
+    const next = !webSearch;
+    setWebSearch(next);
+    try {
+      localStorage.setItem(WEB_SEARCH_KEY, next ? "pa" : "av");
     } catch {
       // Ikke kritisk.
     }
@@ -353,19 +377,26 @@ export function ChatApp() {
           </div>
         ) : (
           <div className="flex flex-col gap-5 py-8">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={
-                  message.role === "user"
-                    ? "self-end rounded-card bg-surface-2 px-4 py-3 text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap"
-                    : "text-[15px] leading-relaxed whitespace-pre-wrap"
-                }
-              >
-                {message.content ||
-                  (busy && index === messages.length - 1 ? "…" : "")}
-              </div>
-            ))}
+            {messages.map((message, index) =>
+              message.role === "user" ? (
+                <div
+                  key={index}
+                  className="self-end rounded-card bg-surface-2 px-4 py-3 text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap"
+                >
+                  {message.content}
+                </div>
+              ) : (
+                <div key={index} className="md-body text-[15px] leading-relaxed">
+                  {message.content ? (
+                    <Markdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </Markdown>
+                  ) : busy && index === messages.length - 1 ? (
+                    "…"
+                  ) : null}
+                </div>
+              ),
+            )}
             <div ref={bottomRef} />
           </div>
         )}
@@ -398,6 +429,23 @@ export function ChatApp() {
             aria-label="Spørsmål"
             className="max-h-40 min-h-11 w-full resize-none rounded-(--radius-ctl) border border-line-strong bg-surface px-3 py-2.5 text-[15px] leading-relaxed placeholder:text-ink-faint focus:border-accent focus:outline-none"
           />
+          <button
+            type="button"
+            onClick={toggleWebSearch}
+            aria-pressed={webSearch}
+            title={
+              webSearch
+                ? "Websøk er på: modellen kan søke på nettet når den trenger fersk informasjon. Søkene gjøres av Anthropic, uten identitet."
+                : "Websøk er av: modellen svarer kun fra det den kan fra før."
+            }
+            className={`shrink-0 rounded-(--radius-ctl) border px-3 py-2.5 font-mono text-[12px] transition ${
+              webSearch
+                ? "border-accent/40 text-accent-strong"
+                : "border-line text-ink-faint hover:text-ink-dim"
+            }`}
+          >
+            {webSearch ? "Websøk på" : "Websøk av"}
+          </button>
           <button
             type="submit"
             disabled={busy || input.trim().length === 0}

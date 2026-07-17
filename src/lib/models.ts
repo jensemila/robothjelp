@@ -8,6 +8,8 @@
  */
 export const TOKEN_VALUE_ORE = 100;
 
+// Websøk-verktøyet finnes i to versjoner. Hvilke modeller som støtter hvilken
+// er verifisert empirisk mot API-et (Haiku 4.5 avviser 20260209-varianten).
 export const MODEL_TIERS = {
   haiku: {
     id: "claude-haiku-4-5",
@@ -16,6 +18,8 @@ export const MODEL_TIERS = {
     description: "Rask og kompetent. Ubegrenset, uten registrering.",
     priceOre: 0,
     maxTokens: 4096,
+    webSearchTool: "web_search_20250305",
+    webSearchMaxUses: 2,
   },
   sonnet: {
     id: "claude-sonnet-5",
@@ -24,6 +28,8 @@ export const MODEL_TIERS = {
     description: "Nær Opus i kvalitet til under halve prisen.",
     priceOre: 100,
     maxTokens: 8192,
+    webSearchTool: "web_search_20260209",
+    webSearchMaxUses: 5,
   },
   opus: {
     id: "claude-opus-4-8",
@@ -32,6 +38,8 @@ export const MODEL_TIERS = {
     description: "Markedets beste modell for de fleste oppgaver.",
     priceOre: 200,
     maxTokens: 8192,
+    webSearchTool: "web_search_20260209",
+    webSearchMaxUses: 5,
   },
   fable: {
     id: "claude-fable-5",
@@ -40,6 +48,8 @@ export const MODEL_TIERS = {
     description: "Den mest kapable modellen som finnes. Tenker alltid.",
     priceOre: 500,
     maxTokens: 8192,
+    webSearchTool: "web_search_20260209",
+    webSearchMaxUses: 5,
   },
 } as const;
 

@@ -108,6 +108,7 @@ export async function POST(request: Request) {
     model: rawModel,
     code: rawCode,
     pp_tokens: rawPpTokens,
+    web_search: rawWebSearch,
     pow_challenge: powChallenge,
     pow_solution: powSolution,
   } = body as {
@@ -115,9 +116,13 @@ export async function POST(request: Request) {
     model?: unknown;
     code?: unknown;
     pp_tokens?: unknown;
+    web_search?: unknown;
     pow_challenge?: unknown;
     pow_solution?: unknown;
   };
+
+  // Websøk er på med mindre brukeren har skrudd det av.
+  const webSearch = rawWebSearch !== false;
 
   if (!verifySolution(powChallenge, powSolution)) {
     return jsonError(403, "Ugyldig eller utløpt beregningsbevis. Prøv igjen.");
@@ -221,21 +226,46 @@ export async function POST(request: Request) {
       };
 
       try {
-        const anthropicStream = client.messages.stream({
-          model: MODEL_TIERS[tier].id,
-          max_tokens: MODEL_TIERS[tier].maxTokens,
-          system: SYSTEM_PROMPT,
-          messages,
-        });
-        for await (const event of anthropicStream) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            send({ type: "text", text: event.delta.text });
+        // Websøk kjøres av Anthropic på serversiden. Søkene utføres uten
+        // identitet, akkurat som resten av kallet.
+        const tools = webSearch
+          ? [
+              {
+                type: MODEL_TIERS[tier].webSearchTool,
+                name: "web_search" as const,
+                max_uses: MODEL_TIERS[tier].webSearchMaxUses,
+              } as Anthropic.WebSearchTool20250305,
+            ]
+          : undefined;
+
+        // Server-verktøy kan pause turen (stop_reason "pause_turn") midt i
+        // et søk. Da sendes samtalen inn igjen med den delvise assistent-
+        // turen, og modellen fortsetter der den slapp.
+        let turnMessages: Anthropic.MessageParam[] = [...messages];
+        let final: Anthropic.Message;
+        for (let round = 0; ; round++) {
+          const anthropicStream = client.messages.stream({
+            model: MODEL_TIERS[tier].id,
+            max_tokens: MODEL_TIERS[tier].maxTokens,
+            system: SYSTEM_PROMPT,
+            messages: turnMessages,
+            ...(tools ? { tools } : {}),
+          });
+          for await (const event of anthropicStream) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              send({ type: "text", text: event.delta.text });
+            }
           }
+          final = await anthropicStream.finalMessage();
+          if (final.stop_reason !== "pause_turn" || round >= 3) break;
+          turnMessages = [
+            ...turnMessages,
+            { role: "assistant", content: final.content },
+          ];
         }
-        const final = await anthropicStream.finalMessage();
 
         // Sikkerhetsklassifiserere kan avvise en forespørsel. Da kommer det
         // ingen tekst, så svaret skal ikke betales for.

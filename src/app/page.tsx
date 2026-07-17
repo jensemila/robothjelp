@@ -160,7 +160,7 @@ export default function Home() {
                   <li>Sonnet, Opus og Fable, markedets beste modeller</li>
                   <li>Du velger modell. Sonnet 1 kr, Opus 2 kr, Fable 5 kr</li>
                   <li>Koden er anonym og ikke knyttet til deg</li>
-                  <li>Fra 20 kr hvis du betaler med Lightning</li>
+                  <li>Fra 20 kr hvis du betaler med bitcoin</li>
                 </ul>
                 <Link
                   href="/buy"
@@ -189,9 +189,9 @@ export default function Home() {
                 </p>
               </div>
               <div className="rounded-card border border-line bg-surface p-7">
-                <h2 className="text-[15px] font-medium">Lightning</h2>
+                <h2 className="text-[15px] font-medium">Bitcoin</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-ink-dim">
-                  Betal med Bitcoin over Lightning hvis du ikke vil at noen
+                  Betal med bitcoin, Lightning eller on-chain, hvis du ikke vil at noen
                   skal vite at du er kunde hos oss i det hele tatt. Da må du
                   betale fra din egen lommebok, ikke rett fra en børs.{" "}
                   <Link

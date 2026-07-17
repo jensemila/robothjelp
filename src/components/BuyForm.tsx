@@ -30,14 +30,6 @@ export function BuyForm() {
 
   async function startPurchase() {
     if (busy || !consent) return;
-
-    // Lightning-betaling åpnes i ny fane, så du beholder denne siden mens du
-    // betaler fra lommeboka. Vinduet MÅ åpnes synkront her, mens klikket
-    // fortsatt gjelder: gjør vi det etter await-en under, blir det blokkert
-    // som popup. Vi fyller det med URL-en når svaret kommer.
-    const payWindow =
-      method === "lightning" ? window.open("", "_blank", "noopener") : null;
-
     setBusy(true);
     setError(null);
     try {
@@ -48,20 +40,14 @@ export function BuyForm() {
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.redirectUrl) {
-        payWindow?.close();
         setError(data?.error ?? "Noe gikk galt. Prøv igjen.");
         setBusy(false);
         return;
       }
-      if (payWindow) {
-        payWindow.location.href = data.redirectUrl;
-        setBusy(false);
-      } else {
-        // Vipps, eller Lightning der nettleseren blokkerte det nye vinduet.
-        window.location.href = data.redirectUrl;
-      }
+      // Samme fane hele veien: betalingssiden sender deg tilbake til
+      // /buy/complete etterpå, så en ekstra fane blir bare stående igjen.
+      window.location.href = data.redirectUrl;
     } catch {
-      payWindow?.close();
       setError("Fikk ikke kontakt med serveren. Prøv igjen.");
       setBusy(false);
     }
@@ -104,7 +90,7 @@ export function BuyForm() {
               </span>
               {lightningOnly && (
                 <span className="mt-1 block font-mono text-[11px] text-accent-strong">
-                  kun Lightning
+                  kun Bitcoin
                 </span>
               )}
             </button>
@@ -144,10 +130,10 @@ export function BuyForm() {
               : "border-line bg-surface hover:border-line-strong"
           }`}
         >
-          <span className="text-[15px] font-medium">Lightning</span>
+          <span className="text-[15px] font-medium">Bitcoin</span>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-dim">
-            Bitcoin over Lightning. Betal fra din egen lommebok, så vet ingen
-            at du er kunde hos oss.
+            Lightning eller on-chain. Betal fra din egen lommebok, så vet
+            ingen at du er kunde hos oss.
           </p>
         </button>
       </div>

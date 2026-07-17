@@ -110,6 +110,13 @@ export default function OpennessPage() {
             innholdet i et spørsmål kan ligge der i den perioden, uten
             identitet knyttet til det.
           </p>
+          <p>
+            Websøk: modellen kan søke på nettet for å svare på spørsmål om
+            ferske hendelser. Søkene utføres av Anthropic på deres
+            infrastruktur, ikke fra din IP, og søkeordene er utledet av
+            spørsmålet ditt. Vil du ikke det, kan du skru av websøk med
+            bryteren i chatten, per nettleser.
+          </p>
         </Section>
 
         <Section title="Hva betalingsleverandørene ser">

@@ -2,6 +2,7 @@ import { isPaymentMethod, isValidDenomination } from "@/lib/pricing";
 import { createBtcpayInvoice, btcpayConfigured } from "@/lib/server/btcpay";
 import { newReference } from "@/lib/server/claims";
 import { allowRequest } from "@/lib/server/ratelimit";
+import { SITE_URL } from "@/lib/site";
 import { createVippsPayment, vippsConfigured } from "@/lib/server/vipps";
 
 // Starter et kjøp. Referansen er en tilfeldig ID uten kobling til person.
@@ -41,7 +42,13 @@ export async function POST(request: Request) {
   }
 
   const reference = newReference();
-  const origin = new URL(request.url).origin;
+  // Bak reverse proxy er request.url den interne adressen (127.0.0.1:3000),
+  // så retur-URL-en må bygges av det offentlige domenet. Lokal utvikling
+  // bruker fortsatt request-origin så flyten virker på localhost.
+  const origin =
+    process.env.NODE_ENV === "production"
+      ? SITE_URL
+      : new URL(request.url).origin;
   const returnUrl = `${origin}/buy/complete?ref=${reference}&m=${method}`;
 
   try {

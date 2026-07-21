@@ -307,12 +307,29 @@ export function ChatApp() {
     setPending((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // Vedlegg følger de betalte modellene. Prøver du på gratisnivået, blir det
+  // en oppfordring til å velge en betalt modell i stedet for en tom knapp.
+  function requestFiles() {
+    if (!isPaidTier(tier)) {
+      setError(
+        "Å lese dokumenter og bilder følger de betalte modellene. Bytt til Sonnet, Opus eller Fable over, fra 1 kr per svar.",
+      );
+      return;
+    }
+    setError(null);
+    fileInputRef.current?.click();
+  }
+
   function selectTier(next: ModelTier) {
     setTier(next);
     try {
       localStorage.setItem(TIER_KEY, next);
     } catch {
       // Ikke kritisk.
+    }
+    // Vedlegg virker ikke på gratisnivået; rydd dem hvis man bytter dit.
+    if (!isPaidTier(next) && pending.length > 0) {
+      setPending([]);
     }
   }
 
@@ -551,10 +568,18 @@ export function ChatApp() {
           />
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={requestFiles}
             aria-label="Legg ved bilde eller PDF"
-            title="Legg ved bilde eller PDF"
-            className="shrink-0 rounded-(--radius-ctl) border border-line-strong px-3 py-2.5 text-[15px] text-ink-dim transition hover:border-accent hover:text-accent-strong"
+            title={
+              isPaidTier(tier)
+                ? "Legg ved bilde eller PDF"
+                : "Vedlegg følger de betalte modellene"
+            }
+            className={`shrink-0 rounded-(--radius-ctl) border px-3 py-2.5 text-[15px] transition ${
+              isPaidTier(tier)
+                ? "border-line-strong text-ink-dim hover:border-accent hover:text-accent-strong"
+                : "border-line text-ink-faint"
+            }`}
           >
             +
           </button>

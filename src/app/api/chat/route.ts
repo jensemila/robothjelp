@@ -211,6 +211,17 @@ export async function POST(request: Request) {
     return jsonError(400, "Ugyldig forespørsel.");
   }
 
+  // Vedlegg følger de betalte modellene. Gratisnivået er tekst.
+  const hasAttachments = messages.some(
+    (m) => Array.isArray(m.content) && m.content.some((b) => b.type !== "text"),
+  );
+  if (hasAttachments && !isPaidTier(tier)) {
+    return jsonError(
+      402,
+      "Vedlegg følger de betalte modellene. Velg Sonnet, Opus eller Fable, fra 1 kr per svar.",
+    );
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return jsonError(503, "Tjenesten er ikke konfigurert ennå.");

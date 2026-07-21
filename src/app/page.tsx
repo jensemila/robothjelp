@@ -14,6 +14,21 @@ export const metadata: Metadata = {
   alternates: { canonical: SITE_URL },
 };
 
+const FLOW_STEPS = [
+  {
+    node: "Din nettleser",
+    body: "Her skriver du spørsmålet, og her blir historikken liggende. Vi har ingen kopi, og du sletter den med ett klikk.",
+  },
+  {
+    node: "Vår server",
+    body: "Et rør, ikke et arkiv. Spørsmålet streames gjennom i de sekundene det tar å svare, og forsvinner i det svaret er levert. Vi skriver det aldri ned.",
+  },
+  {
+    node: "Claude, fra Anthropic",
+    body: "Svarer på spørsmålet. Vi sender det fra én felles bedriftskonto uten navn, så Anthropic ser at noen spurte, ikke at du gjorde det.",
+  },
+];
+
 const TRUST_POINTS = [
   {
     label: "Samtalene lagres aldri",
@@ -61,52 +76,54 @@ export default function Home() {
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
                 Hvordan er det mulig?
               </h2>
+              <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-dim">
+                Spørsmålet ditt tar denne veien, og forsvinner underveis:
+              </p>
 
-              <div className="mt-6 flex flex-col gap-3 font-mono text-[13px] sm:flex-row sm:items-center sm:gap-4">
-                <span className="rounded-(--radius-ctl) border border-line-strong px-3 py-2 text-ink">
-                  Din nettleser
-                </span>
-                <span aria-hidden className="text-ink-faint sm:px-1">
-                  ▸
-                </span>
-                <span className="rounded-(--radius-ctl) border border-accent/40 px-3 py-2 text-accent-strong">
-                  Vår server
-                </span>
-                <span aria-hidden className="text-ink-faint sm:px-1">
-                  ▸
-                </span>
-                <span className="rounded-(--radius-ctl) border border-line-strong px-3 py-2 text-ink">
-                  Claude
-                </span>
-              </div>
+              <ol className="mt-8 space-y-6">
+                {FLOW_STEPS.map((step, i) => (
+                  <li key={step.node} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong font-mono text-[13px] text-ink-dim">
+                        {i + 1}
+                      </span>
+                      {i < FLOW_STEPS.length - 1 && (
+                        <span
+                          aria-hidden
+                          className="mt-1 w-px flex-1 bg-line"
+                        />
+                      )}
+                    </div>
+                    <div className="pb-1">
+                      <h3 className="text-[15px] font-medium">{step.node}</h3>
+                      <p className="mt-1 max-w-xl text-[14px] leading-relaxed text-ink-dim">
+                        {step.body}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
 
-              <div className="mt-6 max-w-2xl space-y-3 text-[15px] leading-relaxed text-ink-dim">
-                <p>
-                  Serveren vår er et rør, ikke et arkiv. Spørsmålet ditt er
-                  innom oss i de sekundene det tar å svare, og forsvinner i det
-                  svaret er levert. Vi skriver det aldri ned noe sted.
-                </p>
-                <p>
-                  Vi sender det videre fra én felles bedriftskonto, så
-                  Anthropic ser at noen spurte, ikke at du gjorde det. Og
-                  siden det ikke finnes kontoer hos oss, finnes det ingenting
-                  å koble en logg til. Historikken din lagres i din egen
-                  nettleser, ikke hos oss.
-                </p>
-                <p className="text-ink">
-                  Du trenger ikke tro på oss.{" "}
-                  <a
-                    href={GITHUB_URL}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    className="text-accent-strong underline underline-offset-4 hover:text-accent"
-                  >
-                    Koden er åpen
-                  </a>
-                  , så du kan lese nøyaktig hva serveren gjør med hvert eneste
-                  kall.
-                </p>
-              </div>
+              <p className="mt-8 max-w-2xl text-[15px] leading-relaxed text-ink">
+                Du trenger ikke tro på oss.{" "}
+                <a
+                  href={GITHUB_URL}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  className="text-accent-strong underline underline-offset-4 hover:text-accent"
+                >
+                  Koden er åpen
+                </a>
+                , så du kan lese nøyaktig hva serveren gjør med hvert eneste
+                kall. Den fulle oversikten står på{" "}
+                <Link
+                  href="/openness"
+                  className="underline underline-offset-4 hover:text-accent-strong"
+                >
+                  åpenhetssiden
+                </Link>
+                .
+              </p>
             </div>
 
             <div className="mt-5 grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-3">
@@ -119,18 +136,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="mt-6 max-w-2xl text-[14px] leading-relaxed text-ink-faint">
-              Spørsmålene besvares av Claude. Alle kall går fra vår felles
-              bedriftskonto, så modell-leverandøren ser at noen spurte om noe,
-              men aldri hvem. Les detaljene på{" "}
-              <Link
-                href="/openness"
-                className="text-ink-dim underline underline-offset-4 hover:text-ink"
-              >
-                åpenhetssiden
-              </Link>
-              .
-            </p>
           </div>
         </section>
 

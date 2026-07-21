@@ -1,12 +1,55 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  BALANCE_KEY,
+  TIER_KEY,
+  formatOre,
+} from "@/lib/credit";
 import { DRAFT_KEY } from "@/lib/draft";
+import {
+  MODEL_ORDER,
+  MODEL_TIERS,
+  type ModelTier,
+  TOKEN_VALUE_ORE,
+  isModelTier,
+} from "@/lib/models";
+import { tokenCount } from "@/lib/pp-client";
 
 export function HeroChatInput() {
   const router = useRouter();
   const [value, setValue] = useState("");
+  const [ready, setReady] = useState(false);
+  const [tier, setTier] = useState<ModelTier>("haiku");
+  const [balance, setBalance] = useState<number | null>(null);
+  const [ppCount, setPpCount] = useState(0);
+
+  // Etter hydrering: les inn hva den tilbakevendende brukeren har fra før.
+  // localStorage finnes ikke ved SSR, så dette må skje i en effekt.
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrering fra localStorage */
+    const storedTier = localStorage.getItem(TIER_KEY);
+    if (isModelTier(storedTier)) setTier(storedTier);
+    const storedBalance = localStorage.getItem(BALANCE_KEY);
+    if (storedBalance !== null && !Number.isNaN(Number(storedBalance))) {
+      setBalance(Number(storedBalance));
+    }
+    setPpCount(tokenCount());
+    setReady(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  const hasCredit = ppCount > 0 || (balance !== null && balance > 0);
+
+  function selectTier(next: ModelTier) {
+    setTier(next);
+    try {
+      localStorage.setItem(TIER_KEY, next);
+    } catch {
+      // Ikke kritisk; /chat faller tilbake til Haiku.
+    }
+  }
 
   function submit() {
     const question = value.trim();
@@ -50,9 +93,48 @@ export function HeroChatInput() {
           Spør
         </button>
       </div>
-      <p className="mt-3 text-center font-mono text-[12px] text-ink-faint">
-        Gratis med Haiku-modellen, helt uten registrering
-      </p>
+
+      {ready && hasCredit ? (
+        // Tilbakevendende bruker med kreditt: vis modellvelger og saldo, så du
+        // kan fortsette der du slapp uten å gå veien om chat-siden.
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+          <div className="flex rounded-(--radius-ctl) border border-line p-0.5 text-[12px]">
+            {MODEL_ORDER.map((key) => {
+              const model = MODEL_TIERS[key];
+              const active = tier === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => selectTier(key)}
+                  aria-pressed={active}
+                  title={`${model.description} ${
+                    model.priceOre === 0
+                      ? "Gratis."
+                      : `${formatOre(model.priceOre)} per svar.`
+                  }`}
+                  className={`rounded-[7px] px-2.5 py-1 transition ${
+                    active
+                      ? "bg-surface-2 text-ink"
+                      : "text-ink-faint hover:text-ink-dim"
+                  }`}
+                >
+                  {model.label}
+                </button>
+              );
+            })}
+          </div>
+          <span className="font-mono text-[12px] text-accent-strong">
+            {ppCount > 0
+              ? `${formatOre(ppCount * TOKEN_VALUE_ORE)} igjen`
+              : `${formatOre(balance ?? 0)} igjen`}
+          </span>
+        </div>
+      ) : (
+        <p className="mt-3 text-center font-mono text-[12px] text-ink-faint">
+          Gratis med Haiku-modellen, helt uten registrering
+        </p>
+      )}
     </form>
   );
 }

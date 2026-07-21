@@ -23,10 +23,17 @@ import {
   returnTokens,
   tokenCount,
 } from "@/lib/pp-client";
+import {
+  ALLOWED_ATTACHMENT_TYPES,
+  type Attachment,
+  type ChatMessage,
+  MAX_FILES,
+  readFileAsAttachment,
+  stripAttachmentData,
+  toApiContent,
+} from "@/lib/attachments";
 import { SITE_NAME } from "@/lib/site";
 import { UpgradeHint } from "./UpgradeHint";
-
-type ChatMessage = { role: "user" | "assistant"; content: string };
 
 // All historikk ligger KUN i nettleseren (localStorage), aldri på serveren.
 const HISTORY_KEY = "robothjelp:history";
@@ -59,6 +66,8 @@ export function ChatApp() {
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [ppCount, setPpCount] = useState(0);
+  const [pending, setPending] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [webSearch, setWebSearch] = useState(true);
 
   // Har du noe å betale med? Da skal Opus være det åpenbare valget.
@@ -74,8 +83,17 @@ export function ChatApp() {
   const sentDraft = useRef(false);
 
   const send = useCallback(
-    async (question: string, history: ChatMessage[], activeTier: ModelTier) => {
-      const userMessage: ChatMessage = { role: "user", content: question };
+    async (
+      question: string,
+      attachments: Attachment[],
+      history: ChatMessage[],
+      activeTier: ModelTier,
+    ) => {
+      const userMessage: ChatMessage = {
+        role: "user",
+        content: question,
+        ...(attachments.length > 0 ? { attachments } : {}),
+      };
       const outgoing = [...history, userMessage];
       setMessages([...outgoing, { role: "assistant", content: "" }]);
       setBusy(true);
@@ -111,7 +129,10 @@ export function ChatApp() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: outgoing,
+            messages: outgoing.map((m) => ({
+              role: m.role,
+              content: toApiContent(m),
+            })),
             model: activeTier,
             web_search: webSearchEnabled(),
             ...(spentTokens
@@ -180,12 +201,16 @@ export function ChatApp() {
         } else {
           commit();
           try {
+            // Base64-data strippes: kun tekst og vedleggsnavn lagres, så
+            // localStorage-kvoten ikke sprenges av bilder.
             localStorage.setItem(
               HISTORY_KEY,
-              JSON.stringify([
-                ...outgoing,
-                { role: "assistant", content: assistantText },
-              ]),
+              JSON.stringify(
+                stripAttachmentData([
+                  ...outgoing,
+                  { role: "assistant", content: assistantText },
+                ]),
+              ),
             );
           } catch {
             // Full localStorage skal ikke stoppe samtalen.
@@ -235,7 +260,7 @@ export function ChatApp() {
         draft = null;
       }
       if (draft && draft.trim().length > 0) {
-        void send(draft.trim(), history, activeTier);
+        void send(draft.trim(), [], history, activeTier);
       }
     }
   }, [send]);
@@ -246,9 +271,40 @@ export function ChatApp() {
 
   function handleSubmit() {
     const question = input.trim();
-    if (question.length === 0 || busy) return;
+    if ((question.length === 0 && pending.length === 0) || busy) return;
     setInput("");
-    void send(question, messages, tier);
+    setPending([]);
+    void send(question, pending, messages, tier);
+  }
+
+  async function addFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setError(null);
+    const room = MAX_FILES - pending.length;
+    if (room <= 0) {
+      setError(`Maks ${MAX_FILES} vedlegg om gangen.`);
+      return;
+    }
+    const chosen = Array.from(files).slice(0, room);
+    for (const file of chosen) {
+      if (!ALLOWED_ATTACHMENT_TYPES[file.type]) {
+        setError("Bare bilder (PNG, JPG, GIF, WebP) og PDF støttes.");
+        continue;
+      }
+      try {
+        const attachment = await readFileAsAttachment(file);
+        setPending((prev) => [...prev, attachment]);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Klarte ikke å legge til filen.",
+        );
+      }
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removePending(index: number) {
+    setPending((prev) => prev.filter((_, i) => i !== index));
   }
 
   function selectTier(next: ModelTier) {
@@ -381,9 +437,36 @@ export function ChatApp() {
               message.role === "user" ? (
                 <div
                   key={index}
-                  className="self-end rounded-card bg-surface-2 px-4 py-3 text-[15px] leading-relaxed max-w-[85%] whitespace-pre-wrap"
+                  className="self-end max-w-[85%] rounded-card bg-surface-2 px-4 py-3"
                 >
-                  {message.content}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {message.attachments.map((att, i) =>
+                        att.kind === "image" && att.data ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={i}
+                            src={`data:${att.mediaType};base64,${att.data}`}
+                            alt={att.name}
+                            className="h-20 w-20 rounded-(--radius-ctl) border border-line object-cover"
+                          />
+                        ) : (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1.5 rounded-(--radius-ctl) border border-line bg-bg px-2.5 py-1.5 font-mono text-[12px] text-ink-dim"
+                          >
+                            {att.kind === "document" ? "PDF" : "Bilde"} ·{" "}
+                            {att.name}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  )}
+                  {message.content && (
+                    <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                      {message.content}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div key={index} className="md-body text-[15px] leading-relaxed">
@@ -421,6 +504,36 @@ export function ChatApp() {
             </p>
           </div>
         )}
+        {pending.length > 0 && (
+          <div className="mx-auto flex max-w-3xl flex-wrap gap-2 px-5 pt-3">
+            {pending.map((att, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-2 rounded-(--radius-ctl) border border-line bg-surface px-2.5 py-1.5 text-[12px] text-ink-dim"
+              >
+                {att.kind === "image" && att.data ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`data:${att.mediaType};base64,${att.data}`}
+                    alt=""
+                    className="h-6 w-6 rounded object-cover"
+                  />
+                ) : (
+                  <span className="font-mono text-ink-faint">PDF</span>
+                )}
+                <span className="max-w-40 truncate">{att.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removePending(i)}
+                  aria-label={`Fjern ${att.name}`}
+                  className="text-ink-faint hover:text-danger"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -428,6 +541,23 @@ export function ChatApp() {
           }}
           className="mx-auto flex max-w-3xl items-end gap-2 px-5 py-4"
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"
+            multiple
+            onChange={(e) => void addFiles(e.target.files)}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Legg ved bilde eller PDF"
+            title="Legg ved bilde eller PDF"
+            className="shrink-0 rounded-(--radius-ctl) border border-line-strong px-3 py-2.5 text-[15px] text-ink-dim transition hover:border-accent hover:text-accent-strong"
+          >
+            +
+          </button>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -461,7 +591,9 @@ export function ChatApp() {
           </button>
           <button
             type="submit"
-            disabled={busy || input.trim().length === 0}
+            disabled={
+              busy || (input.trim().length === 0 && pending.length === 0)
+            }
             className="shrink-0 rounded-(--radius-ctl) bg-accent px-4 py-2.5 text-[14px] font-medium text-accent-ink transition active:scale-[0.98] hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
           >
             Spør

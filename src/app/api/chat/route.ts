@@ -23,33 +23,109 @@ const MAX_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 20_000;
 const MAX_TOTAL_CHARS = 100_000;
 
+// Vedlegg: bilder og PDF streames gjennom til modellen, aldri til disk.
+const ALLOWED_MEDIA: Record<string, "image" | "document"> = {
+  "image/png": "image",
+  "image/jpeg": "image",
+  "image/gif": "image",
+  "image/webp": "image",
+  "application/pdf": "document",
+};
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACH_B64 = 7_000_000; // ~5 MB binær per fil
+const MAX_TOTAL_B64 = 20_000_000; // samlet tak på ett kall
+
 const SYSTEM_PROMPT =
   "Du er en hjelpsom assistent i en anonym søketjeneste. " +
   "Svar på språket brukeren skriver. Vær presis og nøktern.";
 
-type IncomingMessage = { role: "user" | "assistant"; content: string };
+type ContentBlock =
+  | { type: "text"; text: string }
+  | {
+      type: "image" | "document";
+      source: { type: "base64"; media_type: string; data: string };
+    };
+type IncomingMessage = {
+  role: "user" | "assistant";
+  content: string | ContentBlock[];
+};
+
+const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/** Validerer én melding. Innhold kan være ren tekst eller blokker med vedlegg. */
+function validateContent(
+  content: unknown,
+  budget: { chars: number; b64: number; attachments: number },
+): ContentBlock[] | string | null {
+  if (typeof content === "string") {
+    if (content.length === 0 || content.length > MAX_MESSAGE_CHARS) return null;
+    budget.chars += content.length;
+    return content;
+  }
+  if (!Array.isArray(content) || content.length === 0) return null;
+
+  const blocks: ContentBlock[] = [];
+  for (const raw of content) {
+    if (typeof raw !== "object" || raw === null) return null;
+    if (raw.type === "text") {
+      if (typeof raw.text !== "string" || raw.text.length > MAX_MESSAGE_CHARS) {
+        return null;
+      }
+      budget.chars += raw.text.length;
+      blocks.push({ type: "text", text: raw.text });
+    } else if (raw.type === "image" || raw.type === "document") {
+      const src = raw.source;
+      const kind = ALLOWED_MEDIA[src?.media_type];
+      if (
+        typeof src !== "object" ||
+        src === null ||
+        src.type !== "base64" ||
+        !kind ||
+        kind !== raw.type ||
+        typeof src.data !== "string" ||
+        src.data.length === 0 ||
+        src.data.length > MAX_ATTACH_B64 ||
+        !B64_RE.test(src.data)
+      ) {
+        return null;
+      }
+      budget.attachments += 1;
+      budget.b64 += src.data.length;
+      blocks.push({
+        type: raw.type,
+        source: { type: "base64", media_type: src.media_type, data: src.data },
+      });
+    } else {
+      return null;
+    }
+  }
+  return blocks;
+}
 
 function validateMessages(value: unknown): IncomingMessage[] | null {
   if (!Array.isArray(value) || value.length === 0 || value.length > MAX_MESSAGES) {
     return null;
   }
-  let total = 0;
+  const budget = { chars: 0, b64: 0, attachments: 0 };
   const messages: IncomingMessage[] = [];
   for (const item of value) {
     if (
       typeof item !== "object" ||
       item === null ||
-      (item.role !== "user" && item.role !== "assistant") ||
-      typeof item.content !== "string" ||
-      item.content.length === 0 ||
-      item.content.length > MAX_MESSAGE_CHARS
+      (item.role !== "user" && item.role !== "assistant")
     ) {
       return null;
     }
-    total += item.content.length;
-    messages.push({ role: item.role, content: item.content });
+    const content = validateContent(item.content, budget);
+    if (content === null) return null;
+    messages.push({ role: item.role, content });
   }
-  if (total > MAX_TOTAL_CHARS || messages[0].role !== "user") {
+  if (
+    budget.chars > MAX_TOTAL_CHARS ||
+    budget.b64 > MAX_TOTAL_B64 ||
+    budget.attachments > MAX_ATTACHMENTS ||
+    messages[0].role !== "user"
+  ) {
     return null;
   }
   return messages;
@@ -250,7 +326,11 @@ export async function POST(request: Request) {
         // Server-verktøy kan pause turen (stop_reason "pause_turn") midt i
         // et søk. Da sendes samtalen inn igjen med den delvise assistent-
         // turen, og modellen fortsetter der den slapp.
-        let turnMessages: Anthropic.MessageParam[] = [...messages];
+        // Innholdet er validert til Anthropics base64-format over; cast trygt.
+        let turnMessages: Anthropic.MessageParam[] = messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })) as Anthropic.MessageParam[];
         let final: Anthropic.Message;
         for (let round = 0; ; round++) {
           const anthropicStream = client.messages.stream({

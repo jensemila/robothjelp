@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Topbar } from "@/components/Topbar";
-import { GITHUB_URL } from "@/lib/site";
+import { GITHUB_URL, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
+  description:
+    "Uttømmende oversikt over hva Robothjelp lagrer: kun hashede kredittkoder med saldo. Ingen samtaler, ingen IP-logger, ingen kontoer. Sjekk listen mot den åpne kildekoden.",
+  alternates: { canonical: `${SITE_URL}/openness` },
   title: "Åpenhet",
 };
 

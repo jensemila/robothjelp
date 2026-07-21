@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/Footer";
 import { RedeemForm } from "@/components/RedeemForm";
 import { Topbar } from "@/components/Topbar";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
+  description:
+    "Løs inn en anonym kredittkode og ta i bruk de betalte modellene. Vi vet ikke hvem koden tilhører, og det er hele poenget.",
+  alternates: { canonical: `${SITE_URL}/redeem` },
   title: "Løs inn kode",
 };
 

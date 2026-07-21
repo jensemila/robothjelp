@@ -12,6 +12,9 @@ import {
 } from "@/lib/site";
 
 export const metadata: Metadata = {
+  description:
+    "Personvernerklæring for Robothjelp. Tjenesten er bygget for å behandle minst mulig: ingen kontoer, ingen lagring av samtaler, ingen IP-logging.",
+  alternates: { canonical: `${SITE_URL}/privacy` },
   title: "Personvern",
 };
 

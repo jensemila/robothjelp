@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { BuyForm } from "@/components/BuyForm";
 import { Footer } from "@/components/Footer";
 import { Topbar } from "@/components/Topbar";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
+  description:
+    "Kjøp anonym kredittkode fra 20 kr med bitcoin eller 49 kr med Vipps. Velg modell selv: Sonnet 1 kr, Opus 2 kr, Fable 5 kr per svar. Koden er ikke knyttet til deg.",
+  alternates: { canonical: `${SITE_URL}/buy` },
   title: "Kjøp kreditt",
 };
 

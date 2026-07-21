@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Topbar } from "@/components/Topbar";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
+  description:
+    "Slik kjøper du kreditt helt anonymt: ta ut bitcoin til din egen Lightning-lommebok først, og betal oss derfra. Da vet ingen at du er kunde.",
+  alternates: { canonical: `${SITE_URL}/anonymt` },
   title: "Slik kjøper du anonymt",
 };
 

@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { HeroChatInput } from "@/components/HeroChatInput";
 import { Topbar } from "@/components/Topbar";
 import { QA } from "@/lib/faq";
-import { GITHUB_URL } from "@/lib/site";
+import { JsonLd, serviceLd } from "@/lib/seo";
+import { GITHUB_URL, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = {
+  description:
+    "Bruk KI helt anonymt. Ingen konto, ingen lagring av samtaler, ingen IP-logging. Still spørsmål gratis med Haiku, eller betal per svar for Sonnet, Opus og Fable. Betaling med Vipps eller bitcoin, frikoblet fra bruk.",
+  alternates: { canonical: SITE_URL },
+};
 
 const TRUST_POINTS = [
   {
@@ -24,6 +32,7 @@ const TRUST_POINTS = [
 export default function Home() {
   return (
     <>
+      <JsonLd data={serviceLd()} />
       <Topbar />
       <main>
         <section className="mx-auto max-w-6xl px-5 pb-20 pt-20 sm:pt-24">

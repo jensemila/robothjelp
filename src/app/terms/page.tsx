@@ -12,6 +12,9 @@ import {
 } from "@/lib/site";
 
 export const metadata: Metadata = {
+  description:
+    "Salgsvilkår for Robothjelp. Kredittkoden er et ihendehaverbevis som kontanter, levert digitalt og anonymt, i tråd med norsk forbrukerlovgivning.",
+  alternates: { canonical: `${SITE_URL}/terms` },
   title: "Salgsvilkår",
 };
 

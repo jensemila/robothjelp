@@ -492,7 +492,15 @@ export function ChatApp() {
                       {message.content}
                     </Markdown>
                   ) : busy && index === messages.length - 1 ? (
-                    "…"
+                    <span
+                      className="thinking-dots"
+                      role="status"
+                      aria-label="Skriver svar"
+                    >
+                      <span />
+                      <span />
+                      <span />
+                    </span>
                   ) : null}
                 </div>
               ),
